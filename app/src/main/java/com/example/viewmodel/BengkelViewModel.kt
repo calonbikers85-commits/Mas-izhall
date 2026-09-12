@@ -11,6 +11,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class AuthUiState(
     val currentRole: UserRole? = null,
@@ -490,6 +491,17 @@ class BengkelViewModel(application: Application) : AndroidViewModel(application)
                         authErrorMessage = null
                     )
                 }
+            }
+        }
+    }
+
+    // Reset all testing data to fresh starting state
+    fun resetDemoData(onFinished: () -> Unit = {}) {
+        viewModelScope.launch(Dispatchers.IO) {
+            mechanicSimulationJob?.cancel()
+            repository.resetDemoTestingData()
+            withContext(Dispatchers.Main) {
+                onFinished()
             }
         }
     }

@@ -29,10 +29,12 @@ fun BengkelTopAppBar(
     userName: String,
     notifications: List<NotificationEntity> = emptyList(),
     onSwitchRole: ((UserRole) -> Unit)? = null,
+    onResetDemoData: (() -> Unit)? = null,
     onLogout: () -> Unit = {}
 ) {
     var showNotifDialog by remember { mutableStateOf(false) }
     var showRoleSwitchDialog by remember { mutableStateOf(false) }
+    var resetNoticeMessage by remember { mutableStateOf<String?>(null) }
     val unreadCount = notifications.count { !it.isRead }
 
     Surface(
@@ -119,15 +121,31 @@ fun BengkelTopAppBar(
                 // Actions: Switch Role (Demo helper), Notifications, Logout
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (onSwitchRole != null) {
-                        IconButton(
+                        Surface(
                             onClick = { showRoleSwitchDialog = true },
-                            modifier = Modifier.size(38.dp)
+                            shape = RoundedCornerShape(10.dp),
+                            color = Slate800,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, BengkelBlueCyan.copy(alpha = 0.6f)),
+                            modifier = Modifier.padding(end = 4.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.SwapHoriz,
-                                contentDescription = "Ganti Role Akun",
-                                tint = BengkelBlueCyan
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SwapHoriz,
+                                    contentDescription = "Ganti Peran",
+                                    tint = BengkelBlueCyan,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Ganti Peran",
+                                    color = BengkelBlueCyan,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
 
@@ -167,7 +185,7 @@ fun BengkelTopAppBar(
                         modifier = Modifier.size(38.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Logout,
+                            imageVector = Icons.Default.ExitToApp,
                             contentDescription = "Keluar Akun",
                             tint = Slate400
                         )
@@ -180,64 +198,142 @@ fun BengkelTopAppBar(
     // Role Switch Dialog for testing all roles seamlessly
     if (showRoleSwitchDialog && onSwitchRole != null) {
         AlertDialog(
-            onDismissRequest = { showRoleSwitchDialog = false },
+            onDismissRequest = {
+                showRoleSwitchDialog = false
+                resetNoticeMessage = null
+            },
             title = {
-                Text(
-                    text = "Ganti Akun & Hak Akses",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Science,
+                        contentDescription = null,
+                        tint = BengkelBluePrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Pusat Uji Coba Pengguna",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                        color = Slate900
+                    )
+                }
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Pilih akun demonstrasi untuk menguji hak akses:",
-                        fontSize = 13.sp,
+                        text = "Beralih peran seketika untuk menguji coba alur aplikasi:",
+                        fontSize = 12.sp,
                         color = Slate600
                     )
+
+                    if (resetNoticeMessage != null) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = BengkelGreenLight,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = resetNoticeMessage ?: "",
+                                fontSize = 11.sp,
+                                color = BengkelGreenDark,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(8.dp)
+                            )
+                        }
+                    }
+
+                    // Customer Option
                     Button(
                         onClick = {
                             onSwitchRole(UserRole.CUSTOMER)
                             showRoleSwitchDialog = false
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = BengkelBluePrimary)
+                        colors = ButtonDefaults.buttonColors(containerColor = BengkelBluePrimary),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(Icons.Default.Person, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Customer (Bambang Pamungkas)")
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(horizontalAlignment = Alignment.Start) {
+                                Text("Customer (Bambang Pamungkas)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text("Pesan montir darurat, live map GPS & bayar", fontSize = 10.sp, color = Color.White.copy(alpha = 0.8f))
+                            }
+                        }
                     }
 
+                    // Mechanic Option
                     Button(
                         onClick = {
                             onSwitchRole(UserRole.MECHANIC)
                             showRoleSwitchDialog = false
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = BengkelAmberDark)
+                        colors = ButtonDefaults.buttonColors(containerColor = BengkelAmberDark),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(Icons.Default.Build, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Montir (Budi Santoso - Aktif)")
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Build, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(horizontalAlignment = Alignment.Start) {
+                                Text("Montir (Budi Santoso - Aktif)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text("Terima pesanan, update lokasi & selesai servis", fontSize = 10.sp, color = Color.White.copy(alpha = 0.8f))
+                            }
+                        }
                     }
 
+                    // Admin Option
                     Button(
                         onClick = {
                             onSwitchRole(UserRole.ADMIN)
                             showRoleSwitchDialog = false
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = BengkelRed)
+                        colors = ButtonDefaults.buttonColors(containerColor = BengkelRed),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(Icons.Default.AdminPanelSettings, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Admin (Calonbikers85@gmail.com)")
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.AdminPanelSettings, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(horizontalAlignment = Alignment.Start) {
+                                Text("Admin (Calonbikers85@gmail.com)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text("Kelola tarif 11 layanan, verifikasi montir & omzet", fontSize = 10.sp, color = Color.White.copy(alpha = 0.8f))
+                            }
+                        }
+                    }
+
+                    if (onResetDemoData != null) {
+                        OutlinedButton(
+                            onClick = {
+                                onResetDemoData()
+                                resetNoticeMessage = "✓ Data pesanan di-reset ke kondisi awal."
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.RestartAlt, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Reset Data Pengujian (Mulai dari Nol)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        }
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showRoleSwitchDialog = false }) {
-                    Text("Tutup")
+                TextButton(onClick = {
+                    showRoleSwitchDialog = false
+                    resetNoticeMessage = null
+                }) {
+                    Text("Tutup", fontWeight = FontWeight.Bold)
                 }
             }
         )

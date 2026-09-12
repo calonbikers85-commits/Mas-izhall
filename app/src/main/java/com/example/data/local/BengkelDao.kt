@@ -217,4 +217,14 @@ interface BengkelDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAdminUser(admin: AdminUserEntity)
+
+    // --- Reset & Demo Testing Utilities ---
+    @Query("DELETE FROM orders")
+    suspend fun deleteAllOrders()
+
+    @Query("DELETE FROM messages")
+    suspend fun deleteAllMessages()
+
+    @Query("DELETE FROM chats")
+    suspend fun deleteAllChats()
 }

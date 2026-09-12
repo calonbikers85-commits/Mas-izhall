@@ -1,5 +1,6 @@
 package com.example.ui.screens.auth
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -114,7 +117,37 @@ fun AuthMainScreen(viewModel: BengkelViewModel) {
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // -------------------------------------------------------------
+            // MODE UJI COBA CEPAT UNTUK SEMUA ORANG (PUBLIC TESTER HUB)
+            // -------------------------------------------------------------
+            TesterQuickStartHub(
+                viewModel = viewModel,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+
             Spacer(modifier = Modifier.height(20.dp))
+
+            // Section Divider
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                HorizontalDivider(modifier = Modifier.weight(1f), color = Slate300)
+                Text(
+                    text = "  ATAU MASUK DENGAN FORM  ",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Slate500,
+                    letterSpacing = 0.5.sp
+                )
+                HorizontalDivider(modifier = Modifier.weight(1f), color = Slate300)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Role Selector Tabs (Customer, Montir, Admin)
             Surface(
@@ -1348,4 +1381,323 @@ fun ForgotPasswordDialog(
             }
         }
     )
+}
+
+// -------------------------------------------------------------
+// TESTER QUICK-START HUB (FOR EVERYONE TO TEST SEAMLESSLY)
+// -------------------------------------------------------------
+@Composable
+fun TesterQuickStartHub(
+    viewModel: BengkelViewModel,
+    modifier: Modifier = Modifier
+) {
+    var isResetting by remember { mutableStateOf(false) }
+    var resetFeedback by remember { mutableStateOf<String?>(null) }
+    var showTestingGuide by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("tester_quick_start_hub"),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        border = androidx.compose.foundation.BorderStroke(1.5.dp, BengkelBluePrimary.copy(alpha = 0.3f))
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            // Title Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(BengkelBluePrimary, BengkelBlueDeep)
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.RocketLaunch,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "Mode Uji Coba Cepat (Semua Orang)",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Slate900
+                        )
+                        Text(
+                            text = "Siap dicoba instan tanpa perlu daftar OTP",
+                            fontSize = 11.sp,
+                            color = Slate500
+                        )
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = BengkelGreenLight
+                ) {
+                    Text(
+                        text = "1-Klik",
+                        color = BengkelGreenDark,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Feedback Banner
+            if (resetFeedback != null) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = BengkelGreenLight,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = BengkelGreenDark,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = resetFeedback ?: "",
+                            color = BengkelGreenDark,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+
+            // 1. Customer Option Card
+            QuickStartRoleCard(
+                title = "1. Uji Coba: Customer (Pemilik Kendaraan)",
+                roleName = "Bambang Pamungkas • 081234567890",
+                description = "Pesan montir darurat, GPS live tracking, tarif 11 layanan & bayar invoice.",
+                buttonText = "Masuk sebagai Customer",
+                accentColor = BengkelBluePrimary,
+                icon = Icons.Default.Person,
+                onSelect = { viewModel.switchDemoAccount(UserRole.CUSTOMER) }
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // 2. Mechanic Option Card
+            QuickStartRoleCard(
+                title = "2. Uji Coba: Montir Mitra (Siaga Online)",
+                roleName = "Budi Santoso • 081298765431",
+                description = "Terima order masuk, update status 'Menuju Lokasi', navigasi rute & selesai servis.",
+                buttonText = "Masuk sebagai Montir",
+                accentColor = BengkelAmberDark,
+                icon = Icons.Default.Build,
+                onSelect = { viewModel.switchDemoAccount(UserRole.MECHANIC) }
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // 3. Admin Option Card
+            QuickStartRoleCard(
+                title = "3. Uji Coba: Administrator (Owner Bengkel)",
+                roleName = "Admin Utama • Calonbikers85@gmail.com",
+                description = "Ubah harga resmi 11 layanan, verifikasi montir baru & pantau omzet keuangan.",
+                buttonText = "Masuk sebagai Admin",
+                accentColor = BengkelRed,
+                icon = Icons.Default.Security,
+                onSelect = { viewModel.switchDemoAccount(UserRole.ADMIN) }
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Reset demo data & scenarios action row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        isResetting = true
+                        viewModel.resetDemoData {
+                            isResetting = false
+                            resetFeedback = "Data pesanan berhasil di-reset! Siap untuk simulasi baru."
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(10.dp),
+                    enabled = !isResetting,
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                ) {
+                    if (isResetting) {
+                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                    } else {
+                        Icon(
+                            Icons.Default.RestartAlt,
+                            contentDescription = null,
+                            tint = Slate700,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Reset Data",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Slate700
+                        )
+                    }
+                }
+
+                Button(
+                    onClick = { showTestingGuide = !showTestingGuide },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Slate800),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                ) {
+                    Icon(
+                        Icons.Default.HelpOutline,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = if (showTestingGuide) "Tutup Panduan" else "Panduan Uji",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+
+            // Collapsible Testing Walkthrough Guide
+            AnimatedVisibility(visible = showTestingGuide) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Slate50,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Slate200),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "🚀 Rekomendasi Skenario Uji Coba End-to-End:",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Slate900
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "1. Klik 'Masuk sebagai Customer' -> Pilih layanan (cth. Ganti Ban Bocor) -> Buat Pesanan.",
+                            fontSize = 11.sp,
+                            color = Slate700
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "2. Klik tombol 'Ganti Peran' di bagian atas layar -> Pilih Montir -> Tab 'Pesanan Masuk' -> Klik 'Terima Pesanan' & 'Menuju Lokasi'.",
+                            fontSize = 11.sp,
+                            color = Slate700
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "3. Kembali ke Customer via 'Ganti Peran' -> Lacak montir bergerak di peta -> Bayar pesanan setelah montir menyelesaikan servis.",
+                            fontSize = 11.sp,
+                            color = Slate700
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "4. Beralih ke Admin -> Buka tab Layanan untuk ubah tarif resmi atau tab Montir untuk setujui montir baru!",
+                            fontSize = 11.sp,
+                            color = Slate700
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuickStartRoleCard(
+    title: String,
+    roleName: String,
+    description: String,
+    buttonText: String,
+    accentColor: Color,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onSelect: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Slate50,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Slate200),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(accentColor),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                    Text(text = roleName, fontSize = 10.sp, color = Slate500, fontWeight = FontWeight.Medium)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = description,
+                fontSize = 11.sp,
+                color = Slate600,
+                lineHeight = 14.sp
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Button(
+                onClick = onSelect,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = buttonText, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(14.dp))
+                }
+            }
+        }
+    }
 }

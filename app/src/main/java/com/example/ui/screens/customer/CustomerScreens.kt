@@ -53,6 +53,7 @@ fun CustomerMainScreen(viewModel: BengkelViewModel) {
                 userName = currentCustomer?.fullName ?: authState.currentUserName,
                 notifications = notifications,
                 onSwitchRole = { viewModel.switchDemoAccount(it) },
+                onResetDemoData = { viewModel.resetDemoData() },
                 onLogout = { viewModel.logout() }
             )
         },

@@ -70,50 +70,225 @@ class BengkelRepository(private val dao: BengkelDao) {
     fun getOfflineMechanicsCount(): Flow<Int> = dao.getOfflineMechanicsCount()
 
     suspend fun ensureSampleMechanics() {
-        val eko = dao.getMechanicById("montir_eko")
-        if (eko == null) {
-            dao.insertMechanic(
-                MechanicEntity(
-                    mechanicId = "montir_eko",
-                    fullName = "Eko Nugroho",
+        ensureAllDemoData()
+    }
+
+    suspend fun ensureAllDemoData() {
+        // 1. Ensure Admin User
+        val admin = dao.getAdminByEmail("Calonbikers85@gmail.com")
+        if (admin == null) {
+            dao.insertAdminUser(
+                AdminUserEntity(
+                    adminId = "admin_root",
+                    email = "Calonbikers85@gmail.com",
+                    name = "Admin Utama Bengkelku",
+                    role = "SUPER_ADMIN"
+                )
+            )
+            dao.insertUser(
+                UserEntity(
+                    id = "admin_root",
+                    email = "Calonbikers85@gmail.com",
+                    phone = "081122334455",
+                    passwordHash = "Pekalongan27",
+                    role = "ADMIN",
+                    fullName = "Admin Utama Bengkelku",
+                    address = "Pekalongan",
+                    isPhoneVerified = true,
+                    isEmailValidated = true,
+                    isProfileComplete = true
+                )
+            )
+        }
+
+        // 2. Ensure Customer Demo User
+        val customer = dao.getCustomerById("customer_demo")
+        if (customer == null) {
+            dao.insertCustomer(
+                CustomerEntity(
+                    customerId = "customer_demo",
+                    fullName = "Bambang Pamungkas",
                     phone = "081234567890",
-                    email = "eko.montir@bengkelku.id",
-                    address = "Jl. Progo No. 15, Pekalongan",
-                    skills = "Servis Mesin, Transmisi Otomatis, Injeksi",
-                    experienceYears = 7,
-                    workLocation = "Pekalongan Barat",
-                    latitude = -6.8858,
-                    longitude = 109.6825,
-                    status = "BUSY",
-                    rating = 4.9,
-                    reviewCount = 54,
-                    completedJobsCount = 110,
-                    earnings = 6200000L
+                    email = "customer@bengkelku.id",
+                    address = "Jl. Merdeka No. 15, Pekalongan",
+                    latitude = -6.8887,
+                    longitude = 109.6753,
+                    defaultVehicle = "Honda Vario 160 (G 1234 AB)"
+                )
+            )
+            dao.insertUser(
+                UserEntity(
+                    id = "customer_demo",
+                    email = "customer@bengkelku.id",
+                    phone = "081234567890",
+                    passwordHash = "customer123",
+                    role = "CUSTOMER",
+                    fullName = "Bambang Pamungkas",
+                    address = "Jl. Merdeka No. 15, Pekalongan",
+                    isPhoneVerified = true,
+                    isEmailValidated = true,
+                    isProfileComplete = true
                 )
             )
         }
-        val fajar = dao.getMechanicById("montir_fajar")
-        if (fajar == null) {
-            dao.insertMechanic(
-                MechanicEntity(
-                    mechanicId = "montir_fajar",
-                    fullName = "Fajar Setiawan",
-                    phone = "081398761234",
-                    email = "fajar.montir@bengkelku.id",
-                    address = "Jl. WR Supratman No. 22, Pekalongan",
-                    skills = "Tambal Ban, Kelistrikan, Servis Rem",
-                    experienceYears = 3,
-                    workLocation = "Pekalongan Selatan",
-                    latitude = -6.8950,
-                    longitude = 109.6675,
-                    status = "OFFLINE",
-                    rating = 4.7,
-                    reviewCount = 19,
-                    completedJobsCount = 42,
-                    earnings = 2100000L
-                )
+
+        // 3. Ensure All Mechanics
+        val demoMechanics = listOf(
+            MechanicEntity(
+                mechanicId = "montir_budi",
+                fullName = "Budi Santoso",
+                phone = "081298765431",
+                email = "budi.montir@bengkelku.id",
+                address = "Jl. Hayam Wuruk No. 12, Pekalongan",
+                skills = "Servis Mesin, Tune Up, Ganti Oli, Mogok Jalan",
+                experienceYears = 8,
+                workLocation = "Pekalongan Barat & Sekitarnya",
+                latitude = -6.8850,
+                longitude = 109.6720,
+                status = "ACTIVE",
+                rating = 4.9,
+                reviewCount = 48,
+                completedJobsCount = 152,
+                earnings = 7850000L
+            ),
+            MechanicEntity(
+                mechanicId = "montir_agus",
+                fullName = "Agus Prasetyo",
+                phone = "081377889900",
+                email = "agus.montir@bengkelku.id",
+                address = "Jl. Dr. Cipto No. 45, Pekalongan",
+                skills = "Tambal Ban, Ganti Ban, Servis Rem, Aki Kendaraan",
+                experienceYears = 5,
+                workLocation = "Pekalongan Timur & Pusat",
+                latitude = -6.8920,
+                longitude = 109.6790,
+                status = "ACTIVE",
+                rating = 4.8,
+                reviewCount = 32,
+                completedJobsCount = 94,
+                earnings = 4920000L
+            ),
+            MechanicEntity(
+                mechanicId = "montir_dimas",
+                fullName = "Dimas Pratama",
+                phone = "081912345678",
+                email = "dimas.montir@bengkelku.id",
+                address = "Jl. Veteran No. 8, Pekalongan",
+                skills = "Servis Kelistrikan, ECU Scanner, Tune Up, Mogok Darurat",
+                experienceYears = 6,
+                workLocation = "Pekalongan Utara",
+                latitude = -6.8830,
+                longitude = 109.6760,
+                status = "ACTIVE",
+                rating = 5.0,
+                reviewCount = 27,
+                completedJobsCount = 68,
+                earnings = 3850000L
+            ),
+            MechanicEntity(
+                mechanicId = "montir_hendra",
+                fullName = "Hendra Wijaya",
+                phone = "085612349988",
+                email = "hendra.calon@gmail.com",
+                address = "Jl. Bahagia No. 19, Wiradesa",
+                skills = "Overhaul Mesin Motor & Mobil, Kaki-kaki",
+                experienceYears = 4,
+                workLocation = "Wiradesa & Pekalongan Selatan",
+                latitude = -6.8960,
+                longitude = 109.6650,
+                status = "WAITING_APPROVAL",
+                rating = 5.0,
+                reviewCount = 0,
+                completedJobsCount = 0,
+                earnings = 0L
+            ),
+            MechanicEntity(
+                mechanicId = "montir_eko",
+                fullName = "Eko Nugroho",
+                phone = "081234567892",
+                email = "eko.montir@bengkelku.id",
+                address = "Jl. Progo No. 15, Pekalongan",
+                skills = "Servis Mesin, Transmisi Otomatis, Injeksi",
+                experienceYears = 7,
+                workLocation = "Pekalongan Barat",
+                latitude = -6.8858,
+                longitude = 109.6825,
+                status = "BUSY",
+                rating = 4.9,
+                reviewCount = 54,
+                completedJobsCount = 110,
+                earnings = 6200000L
+            ),
+            MechanicEntity(
+                mechanicId = "montir_fajar",
+                fullName = "Fajar Setiawan",
+                phone = "081398761234",
+                email = "fajar.montir@bengkelku.id",
+                address = "Jl. WR Supratman No. 22, Pekalongan",
+                skills = "Tambal Ban, Kelistrikan, Servis Rem",
+                experienceYears = 3,
+                workLocation = "Pekalongan Selatan",
+                latitude = -6.8950,
+                longitude = 109.6675,
+                status = "OFFLINE",
+                rating = 4.7,
+                reviewCount = 19,
+                completedJobsCount = 42,
+                earnings = 2100000L
             )
+        )
+
+        demoMechanics.forEach { mech ->
+            val existing = dao.getMechanicById(mech.mechanicId)
+            if (existing == null) {
+                dao.insertMechanic(mech)
+            }
+            val existingUser = dao.getUserById(mech.mechanicId)
+            if (existingUser == null) {
+                dao.insertUser(
+                    UserEntity(
+                        id = mech.mechanicId,
+                        email = mech.email,
+                        phone = mech.phone,
+                        passwordHash = "montir123",
+                        role = "MECHANIC",
+                        fullName = mech.fullName,
+                        address = mech.address,
+                        isPhoneVerified = true,
+                        isEmailValidated = true,
+                        isProfileComplete = true
+                    )
+                )
+            }
         }
+    }
+
+    suspend fun resetDemoTestingData() {
+        dao.deleteAllOrders()
+        dao.deleteAllMessages()
+        dao.deleteAllChats()
+        // Reset mechanics status
+        dao.updateMechanicStatus("montir_budi", "ACTIVE")
+        dao.updateMechanicStatus("montir_agus", "ACTIVE")
+        dao.updateMechanicStatus("montir_dimas", "ACTIVE")
+        dao.updateMechanicStatus("montir_eko", "BUSY")
+        dao.updateMechanicStatus("montir_fajar", "OFFLINE")
+        dao.updateMechanicStatus("montir_hendra", "WAITING_APPROVAL")
+
+        // Reset locations
+        dao.updateMechanicLocation("montir_budi", -6.8850, 109.6720)
+        dao.updateMechanicLocation("montir_agus", -6.8920, 109.6790)
+
+        dao.insertAuditLog(
+            AuditLogEntity(
+                actorId = "tester",
+                actorRole = "TESTER",
+                action = "DEMO_DATA_RESET",
+                targetEntity = "SYSTEM",
+                targetId = "all_orders",
+                details = "Data uji coba berhasil di-reset ke kondisi awal siap uji coba baru."
+            )
+        )
     }
 
     // --- Services & Price Management ---

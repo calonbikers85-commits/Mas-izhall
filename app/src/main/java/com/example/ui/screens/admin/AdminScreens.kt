@@ -42,6 +42,7 @@ fun AdminMainScreen(viewModel: BengkelViewModel) {
                 userName = "Super Admin (Calonbikers85@gmail.com)",
                 notifications = notifications,
                 onSwitchRole = { viewModel.switchDemoAccount(it) },
+                onResetDemoData = { viewModel.resetDemoData() },
                 onLogout = { viewModel.logout() }
             )
         },
