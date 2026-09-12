@@ -1,0 +1,6 @@
+{
+  "name": "Bengkelku",
+  "description": "Aplikasi layanan bengkel dan panggilan montir online berbasis lokasi menghubungkan Customer, Montir, dan Admin.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
