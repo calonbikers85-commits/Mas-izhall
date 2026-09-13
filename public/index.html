@@ -1,0 +1,4130 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PIJATKU – Pesan Terapis, Nyaman di Rumah</title>
+  <meta name="description" content="Aplikasi layanan pesan terapis pijat panggilan profesional langsung ke rumah Anda di area Pekalongan dan sekitarnya.">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Leaflet CSS & JS for Interactive Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+
+:root {
+  --primary: #059669;
+  --primary-dark: #047857;
+  --primary-light: #d1fae5;
+  --accent: #d97706;
+  --accent-light: #fef3c7;
+  --bg-sand: #fbfbf9;
+  --surface: #ffffff;
+  --text-main: #1f2937;
+  --text-muted: #6b7280;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  background-color: #f3f4f6;
+  color: var(--text-main);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* App container */
+.app-container {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: #ffffff;
+  position: relative;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+/* Leaflet map styles */
+.leaflet-container {
+  font-family: inherit;
+  border-radius: 1rem;
+  z-index: 10 !important;
+}
+
+/* Pulse badge for live status */
+.pulse-emerald {
+  animation: pulse-green 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.08); }
+}
+
+/* Glass effect */
+.glass-nav {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Card hover animation */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 20px -8px rgba(0,0,0,0.1);
+}
+
+/* Step tracker indicator */
+.stepper-line {
+  position: absolute;
+  top: 18px;
+  left: 30px;
+  right: 30px;
+  height: 3px;
+  background: #e5e7eb;
+  z-index: 1;
+}
+.stepper-line-active {
+  position: absolute;
+  top: 18px;
+  left: 30px;
+  height: 3px;
+  background: #059669;
+  z-index: 2;
+  transition: width 0.4s ease;
+}
+
+/* Chat bubble styling */
+.chat-bubble-user {
+  background: #059669;
+  color: #ffffff;
+  border-top-right-radius: 4px;
+}
+.chat-bubble-peer {
+  background: #f3f4f6;
+  color: #1f2937;
+  border-top-left-radius: 4px;
+}
+
+/* Hide scrollbar for category tabs */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Timer ring */
+.timer-display {
+  font-variant-numeric: tabular-nums;
+}
+
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-900 antialiased min-h-screen">
+
+
+  <!-- DEMO TOOLBAR AT TOP -->
+  <div class="bg-gray-900 text-white text-xs px-4 py-2 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-50 shadow-md">
+    <div class="flex items-center space-x-2">
+      <span class="font-black text-emerald-400 tracking-wider">PIJATKU DEMO:</span>
+      <span id="demo-current-role-badge" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-gray-700 text-gray-200">Memuat...</span>
+    </div>
+    <div class="flex items-center space-x-1.5 overflow-x-auto">
+      <button onclick="autoLoginDemo('customer')" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[11px] font-bold transition-all">
+        <i class="fa-solid fa-user mr-1"></i> Pelanggan
+      </button>
+      <button onclick="autoLoginDemo('therapist')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold transition-all">
+        <i class="fa-solid fa-spa mr-1"></i> Terapis
+      </button>
+      <button onclick="autoLoginDemo('admin')" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-[11px] font-bold transition-all">
+        <i class="fa-solid fa-shield-halved mr-1"></i> Admin
+      </button>
+      <button onclick="resetAllData()" class="px-2.5 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded text-[11px] transition-all ml-1">
+        <i class="fa-solid fa-rotate mr-1"></i> Reset Data
+      </button>
+      <button onclick="logout()" class="px-2 py-1 bg-rose-900 hover:bg-rose-800 text-rose-200 rounded text-[11px] transition-all">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="fixed top-12 right-4 z-50 flex flex-col items-end pointer-events-none"></div>
+
+  <!-- MAIN APP CONTAINER -->
+  <main id="app-root" class="min-h-screen">
+
+    <!-- ========================================================
+         VIEW 1: AUTHENTICATION (LOGIN & REGISTRATION)
+         ======================================================== -->
+    <section id="view-auth" class="app-container hidden py-6 px-4">
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-700 rounded-3xl mx-auto flex items-center justify-center text-white text-3xl shadow-lg mb-3">
+          <i class="fa-solid fa-spa"></i>
+        </div>
+        <h1 class="text-2xl font-black text-gray-900 tracking-tight">PIJATKU</h1>
+        <p class="text-xs text-emerald-800 font-semibold tracking-wide uppercase mt-0.5">Pesan Terapis, Nyaman di Rumah</p>
+        <p class="text-xs text-gray-500 mt-1">Layanan pijat panggilan profesional, higienis & terpercaya</p>
+      </div>
+
+      <!-- Auth Tabs -->
+      <div class="flex border-b border-gray-200 mb-6 text-xs font-bold overflow-x-auto no-scrollbar">
+        <button onclick="switchAuthTab('login-customer')" id="auth-tab-login-customer" class="auth-tab-btn flex-1 py-2.5 px-3 border-b-2 whitespace-nowrap text-center">Masuk Pelanggan</button>
+        <button onclick="switchAuthTab('login-therapist')" id="auth-tab-login-therapist" class="auth-tab-btn flex-1 py-2.5 px-3 border-b-2 whitespace-nowrap text-center">Masuk Terapis</button>
+        <button onclick="switchAuthTab('login-admin')" id="auth-tab-login-admin" class="auth-tab-btn flex-1 py-2.5 px-3 border-b-2 whitespace-nowrap text-center">Admin</button>
+        <button onclick="switchAuthTab('reg-customer')" id="auth-tab-reg-customer" class="auth-tab-btn flex-1 py-2.5 px-3 border-b-2 whitespace-nowrap text-center">Daftar Pelanggan</button>
+        <button onclick="switchAuthTab('reg-therapist')" id="auth-tab-reg-therapist" class="auth-tab-btn flex-1 py-2.5 px-3 border-b-2 whitespace-nowrap text-center">Daftar Mitra Terapis</button>
+      </div>
+
+      <!-- Tab: Login Customer -->
+      <div id="auth-panel-login-customer" class="auth-panel">
+        <div class="bg-blue-50/70 border border-blue-100 rounded-2xl p-3.5 mb-4 text-xs flex items-center justify-between">
+          <div>
+            <span class="font-bold text-blue-900">Demo Cepat:</span> Dimas Arya (081987654321)
+          </div>
+          <button onclick="autoLoginDemo('customer')" class="px-2.5 py-1 bg-blue-600 text-white rounded-lg font-bold text-[11px]">Auto Fill</button>
+        </div>
+        <form onsubmit="handleLogin(event, 'customer')" class="space-y-3.5">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Email atau Nomor HP</label>
+            <input type="text" name="identifier" value="dimas.arya@gmail.com" required class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="0812... / email@anda.com">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Password</label>
+            <input type="password" name="password" value="customerdimas123" required class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="••••••••">
+          </div>
+          <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow-md transition-all">
+            Masuk sebagai Pelanggan
+          </button>
+        </form>
+      </div>
+
+      <!-- Tab: Login Therapist -->
+      <div id="auth-panel-login-therapist" class="auth-panel hidden">
+        <div class="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-3.5 mb-4 text-xs flex items-center justify-between">
+          <div>
+            <span class="font-bold text-emerald-900">Demo Cepat:</span> Budi Santoso (081234567891)
+          </div>
+          <button onclick="autoLoginDemo('therapist')" class="px-2.5 py-1 bg-emerald-600 text-white rounded-lg font-bold text-[11px]">Auto Fill</button>
+        </div>
+        <form onsubmit="handleLogin(event, 'therapist')" class="space-y-3.5">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Email atau Nomor HP Terapis</label>
+            <input type="text" name="identifier" value="budi.terapis@gmail.com" required class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Password</label>
+            <input type="password" name="password" value="terapisbudi123" required class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <button type="submit" class="w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-sm shadow-md transition-all">
+            Masuk Portal Terapis
+          </button>
+        </form>
+      </div>
+
+      <!-- Tab: Login Admin -->
+      <div id="auth-panel-login-admin" class="auth-panel hidden">
+        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-4 text-xs text-amber-900">
+          <div class="font-bold flex items-center gap-1.5 mb-1">
+            <i class="fa-solid fa-lock"></i> Kredensial Khusus Administrator
+          </div>
+          <div>Email: <b>calonbikers85@gmail.com</b></div>
+          <div>Password: <b>Pekalongan27</b></div>
+          <div class="text-[10px] text-amber-700 mt-1 italic">*Hanya untuk demo prototipe. Sistem produksi wajib menggunakan backend auth.</div>
+        </div>
+        <form onsubmit="handleLogin(event, 'admin')" class="space-y-3.5">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Email Admin</label>
+            <input type="email" name="identifier" value="calonbikers85@gmail.com" required class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Password Admin</label>
+            <input type="password" name="password" value="Pekalongan27" required class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+          </div>
+          <button type="submit" class="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-sm shadow-md transition-all">
+            Masuk Panel Admin
+          </button>
+        </form>
+      </div>
+
+      <!-- Tab: Register Customer -->
+      <div id="auth-panel-reg-customer" class="auth-panel hidden">
+        <form onsubmit="handleCustomerRegister(event)" class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Nama Lengkap</label>
+            <input type="text" name="name" required class="w-full px-3.5 py-2 rounded-xl border text-sm" placeholder="Contoh: Dimas Arya">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1">Email</label>
+              <input type="email" name="email" required class="w-full px-3 py-2 rounded-xl border text-sm" placeholder="nama@email.com">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1">Nomor HP</label>
+              <input type="tel" name="phone" required class="w-full px-3 py-2 rounded-xl border text-sm" placeholder="081234567890">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Password</label>
+            <input type="password" name="password" required class="w-full px-3.5 py-2 rounded-xl border text-sm" placeholder="Minimal 6 karakter">
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-semibold text-gray-700">Alamat Lengkap</label>
+              <button type="button" onclick="requestGPS((c, e) => { AppState.customerLocation = c; document.getElementById('reg-cust-addr').value = 'Titik GPS: Pekalongan (' + c.lat.toFixed(4) + ', ' + c.lng.toFixed(4) + ')'; showToast(e || 'GPS terdeteksi!', e ? 'alert' : 'success'); })" class="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
+                <i class="fa-solid fa-location-crosshairs"></i> Deteksi GPS
+              </button>
+            </div>
+            <textarea name="address" id="reg-cust-addr" rows="2" required class="w-full px-3 py-2 rounded-xl border text-sm" placeholder="Nama jalan, nomor rumah, kelurahan, Pekalongan"></textarea>
+          </div>
+          <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow-md transition-all">
+            Daftar & Kirim OTP SMS
+          </button>
+        </form>
+      </div>
+
+      <!-- Tab: Register Therapist -->
+      <div id="auth-panel-reg-therapist" class="auth-panel hidden">
+        <div class="bg-emerald-50 text-emerald-800 text-xs p-3 rounded-xl mb-3 flex items-start space-x-2">
+          <i class="fa-solid fa-circle-info text-sm mt-0.5"></i>
+          <span>Pendaftaran mitra terapis memerlukan persetujuan dari Admin sebelum akun aktif dan dapat menerima pesanan.</span>
+        </div>
+        <form onsubmit="handleTherapistRegister(event)" class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Nama Lengkap & Gelar (jika ada)</label>
+            <input type="text" name="name" required class="w-full px-3.5 py-2 rounded-xl border text-sm" placeholder="Contoh: Rahmat Hidayat, A.Md.Kes">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1">Email</label>
+              <input type="email" name="email" required class="w-full px-3 py-2 rounded-xl border text-sm" placeholder="terapis@email.com">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1">Nomor WhatsApp/HP</label>
+              <input type="tel" name="phone" required class="w-full px-3 py-2 rounded-xl border text-sm" placeholder="0812...">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1">Jenis Kelamin</label>
+              <select name="gender" class="w-full px-3 py-2 rounded-xl border text-sm bg-white">
+                <option value="Laki-laki">Laki-laki</option>
+                <option value="Perempuan">Perempuan</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1">Pengalaman (Tahun)</label>
+              <input type="number" name="experience" min="1" max="40" value="3" required class="w-full px-3 py-2 rounded-xl border text-sm">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Keahlian / Spesialisasi</label>
+            <div class="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-2.5 rounded-xl border">
+              <label class="flex items-center space-x-1.5"><input type="checkbox" name="specialties" value="Pijat Tradisional Jawa" checked> <span>Tradisional Jawa</span></label>
+              <label class="flex items-center space-x-1.5"><input type="checkbox" name="specialties" value="Refleksi Kaki & Tangan" checked> <span>Refleksi Kaki</span></label>
+              <label class="flex items-center space-x-1.5"><input type="checkbox" name="specialties" value="Deep Tissue & Sport Massage"> <span>Deep Tissue</span></label>
+              <label class="flex items-center space-x-1.5"><input type="checkbox" name="specialties" value="Aromaterapi & Lulur Keraton"> <span>Aromaterapi</span></label>
+              <label class="flex items-center space-x-1.5"><input type="checkbox" name="specialties" value="Pijat Ibu Hamil & Pasca Salin"> <span>Ibu Hamil</span></label>
+              <label class="flex items-center space-x-1.5"><input type="checkbox" name="specialties" value="Totok Wajah & Bekam Kering"> <span>Totok Wajah</span></label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">URL Foto Profil / Terapis</label>
+            <input type="url" name="photo" class="w-full px-3.5 py-2 rounded-xl border text-sm" placeholder="https://..." value="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Alamat Domisili</label>
+            <textarea name="address" rows="2" required class="w-full px-3 py-2 rounded-xl border text-sm" placeholder="Kecamatan & Kota di Pekalongan"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Bio Singkat & Sertifikasi</label>
+            <input type="text" name="bio" class="w-full px-3.5 py-2 rounded-xl border text-sm" placeholder="Contoh: Sertifikat BNSP Pijat Tradisional 2023">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Password Akun</label>
+            <input type="password" name="password" required class="w-full px-3.5 py-2 rounded-xl border text-sm" placeholder="••••••••">
+          </div>
+          <button type="submit" class="w-full py-3 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-xl text-sm shadow-md transition-all">
+            Kirim Permohonan Mitra Terapis
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         VIEW 2: CUSTOMER DASHBOARD & SCREENS
+         ======================================================== -->
+    <section id="view-customer" class="app-container hidden pb-24">
+      <!-- Tab 1: Customer Home -->
+      <div id="cust-view-home" class="cust-view-tab">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white p-5 rounded-b-3xl shadow-lg">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-full bg-emerald-600/60 border border-emerald-400/40 flex items-center justify-center font-bold text-lg">
+                <i class="fa-solid fa-user"></i>
+              </div>
+              <div>
+                <div class="text-[11px] text-emerald-200">Selamat Datang,</div>
+                <div id="cust-header-name" class="font-extrabold text-base leading-tight">Dimas Arya</div>
+              </div>
+            </div>
+            <button onclick="setCustomerTab('history')" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white relative">
+              <i class="fa-regular fa-bell text-sm"></i>
+            </button>
+          </div>
+          
+          <!-- Location Pill -->
+          <div class="bg-white/10 backdrop-blur-md px-3 py-2 rounded-2xl flex items-center justify-between text-xs">
+            <div class="flex items-center space-x-2 truncate">
+              <i class="fa-solid fa-location-dot text-emerald-300"></i>
+              <span id="cust-header-address" class="truncate">Pekalongan, Jawa Tengah</span>
+            </div>
+            <button onclick="requestGPS((c, e) => { AppState.customerLocation = c; showToast(e || 'GPS aktif: ' + c.lat.toFixed(4) + ', ' + c.lng.toFixed(4), e ? 'alert' : 'success'); renderCustomerNearbyTherapists(); })" class="text-[10px] font-bold bg-emerald-500/80 hover:bg-emerald-500 px-2 py-1 rounded-lg shrink-0">
+              Ubah GPS
+            </button>
+          </div>
+        </div>
+
+        <!-- Active Order Floating Banner (Pulsing live pill) -->
+        <div id="cust-active-order-banner" class="mx-4 -mt-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-3.5 rounded-2xl shadow-xl flex items-center justify-between cursor-pointer hover:scale-[1.01] transition-transform hidden">
+          <div class="flex items-center space-x-3">
+            <div class="w-3 h-3 rounded-full bg-amber-300 pulse-emerald"></div>
+            <div>
+              <div class="text-[10px] text-emerald-100 font-bold uppercase tracking-wider">Pesanan Sedang Aktif</div>
+              <div id="active-order-service-name" class="font-bold text-xs">Pijat Tradisional Jawa</div>
+            </div>
+          </div>
+          <div class="flex items-center space-x-1.5">
+            <span id="active-order-status-tag" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-white text-emerald-800">MEMUAT</span>
+            <i class="fa-solid fa-chevron-right text-xs"></i>
+          </div>
+        </div>
+
+        <!-- Promo Banner -->
+        <div class="p-4">
+          <div class="bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 rounded-2xl p-4 text-white shadow-md relative overflow-hidden">
+            <div class="relative z-10 max-w-[70%]">
+              <span class="px-2 py-0.5 bg-white/20 text-[10px] font-bold rounded-full uppercase">Pijat Nyaman Di Rumah</span>
+              <h2 class="text-base font-extrabold mt-1 leading-snug">Relaksasi Tanpa Perlu Keluar Macet</h2>
+              <p class="text-xs text-amber-100 mt-1">Terapis profesional bersertifikat datang ke alamat Anda di area Pekalongan.</p>
+            </div>
+            <i class="fa-solid fa-spa absolute right-2 -bottom-2 text-7xl text-white/15"></i>
+          </div>
+        </div>
+
+        <!-- Category Filters -->
+        <div class="px-4 mb-2">
+          <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Kategori Layanan</h3>
+          <div class="flex space-x-2 overflow-x-auto no-scrollbar pb-1">
+            <button onclick="filterServiceCategory('Semua')" id="cat-pill-Semua" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-md whitespace-nowrap">Semua</button>
+            <button onclick="filterServiceCategory('Relaksasi')" id="cat-pill-Relaksasi" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-gray-700 border whitespace-nowrap">Relaksasi</button>
+            <button onclick="filterServiceCategory('Refleksi')" id="cat-pill-Refleksi" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-gray-700 border whitespace-nowrap">Refleksi</button>
+            <button onclick="filterServiceCategory('Terapi')" id="cat-pill-Terapi" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-gray-700 border whitespace-nowrap">Terapi Khusus</button>
+            <button onclick="filterServiceCategory('Ibu & Anak')" id="cat-pill-Ibu-&-Anak" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-gray-700 border whitespace-nowrap">Ibu & Anak</button>
+            <button onclick="filterServiceCategory('Kecantikan')" id="cat-pill-Kecantikan" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-gray-700 border whitespace-nowrap">Kecantikan</button>
+          </div>
+        </div>
+
+        <!-- Services Grid -->
+        <div class="p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-extrabold text-gray-900 text-base">Pilihan Layanan Pijat</h3>
+          </div>
+          <div id="cust-services-grid" class="grid grid-cols-1 gap-3.5">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Nearby Therapists Section -->
+        <div class="p-4 bg-emerald-50/50 mt-2">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h3 class="font-extrabold text-gray-900 text-base">Terapis Sekitar Anda</h3>
+              <p class="text-xs text-gray-500">Terapis terdekat di sekitar Pekalongan</p>
+            </div>
+          </div>
+          <div id="cust-nearby-therapists" class="flex space-x-3 overflow-x-auto no-scrollbar snap-x pb-2">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Customer Orders History -->
+      <div id="cust-view-history" class="cust-view-tab hidden p-4">
+        <h2 class="text-lg font-black text-gray-900 mb-1">Riwayat Pesanan</h2>
+        <p class="text-xs text-gray-500 mb-4">Daftar pesanan aktif dan selesai</p>
+        <div id="cust-history-list">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Tab 3: Customer Profile -->
+      <div id="cust-view-profile" class="cust-view-tab hidden p-4">
+        <div class="bg-white rounded-2xl p-5 border shadow-sm text-center mb-4">
+          <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-800 text-2xl flex items-center justify-center mx-auto mb-2 font-bold">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <h3 class="font-extrabold text-gray-900 text-base">Dimas Arya Nugraha</h3>
+          <p class="text-xs text-gray-500">dimas.arya@gmail.com • 081987654321</p>
+          <span class="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-[11px] font-bold mt-2">Pelanggan Terverifikasi</span>
+        </div>
+        <div class="space-y-2 text-sm">
+          <button onclick="setCustomerTab('history')" class="w-full p-3.5 bg-white border rounded-xl flex items-center justify-between text-gray-700 font-semibold hover:bg-gray-50">
+            <span><i class="fa-solid fa-clock-rotate-left mr-2 text-emerald-600"></i> Riwayat Pesanan Saya</span>
+            <i class="fa-solid fa-chevron-right text-gray-400 text-xs"></i>
+          </button>
+          <button onclick="requestGPS((c, e) => showToast('Lokasi: ' + c.lat + ', ' + c.lng, 'info'))" class="w-full p-3.5 bg-white border rounded-xl flex items-center justify-between text-gray-700 font-semibold hover:bg-gray-50">
+            <span><i class="fa-solid fa-location-crosshairs mr-2 text-emerald-600"></i> Kalibrasi Ulang GPS</span>
+            <i class="fa-solid fa-chevron-right text-gray-400 text-xs"></i>
+          </button>
+          <button onclick="logout()" class="w-full p-3.5 bg-rose-50 border border-rose-100 rounded-xl text-rose-700 font-bold flex items-center justify-center gap-2 hover:bg-rose-100 mt-4">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar dari Akun
+          </button>
+        </div>
+      </div>
+
+      <!-- Customer Bottom Navigation -->
+      <nav class="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto glass-nav z-40 px-6 py-2 flex items-center justify-around">
+        <button onclick="setCustomerTab('home')" id="cust-nav-home" class="cust-nav-btn text-emerald-700 font-bold flex flex-col items-center text-[11px] transition-colors">
+          <i class="fa-solid fa-house text-lg mb-0.5"></i>
+          <span>Beranda</span>
+        </button>
+        <button onclick="setCustomerTab('history')" id="cust-nav-history" class="cust-nav-btn text-gray-400 flex flex-col items-center text-[11px] transition-colors">
+          <i class="fa-solid fa-receipt text-lg mb-0.5"></i>
+          <span>Pesanan</span>
+        </button>
+        <button onclick="setCustomerTab('profile')" id="cust-nav-profile" class="cust-nav-btn text-gray-400 flex flex-col items-center text-[11px] transition-colors">
+          <i class="fa-solid fa-circle-user text-lg mb-0.5"></i>
+          <span>Profil</span>
+        </button>
+      </nav>
+    </section>
+
+    <!-- ========================================================
+         VIEW 3: THERAPIST DASHBOARD & SCREENS
+         ======================================================== -->
+    <section id="view-therapist" class="app-container hidden pb-24">
+      <!-- Top Status Card -->
+      <div class="bg-gray-900 text-white p-5 rounded-b-3xl shadow-lg">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-3">
+            <div class="w-11 h-11 rounded-full bg-emerald-500/30 border border-emerald-400 flex items-center justify-center font-bold text-xl text-emerald-400">
+              <i class="fa-solid fa-spa"></i>
+            </div>
+            <div>
+              <div class="text-[11px] text-gray-400">Portal Mitra Terapis</div>
+              <div id="th-header-name" class="font-extrabold text-base">Budi Santoso, S.Tr.Kes</div>
+              <div class="text-xs text-amber-400 flex items-center gap-1 font-semibold">
+                <i class="fa-solid fa-star text-[10px]"></i> <span id="th-header-rating">4.9</span>
+              </div>
+            </div>
+          </div>
+          <button onclick="logout()" class="text-gray-400 hover:text-white p-2">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          </button>
+        </div>
+
+        <!-- Online/Offline Switcher -->
+        <div class="bg-gray-800/90 rounded-2xl p-3 flex items-center justify-between border border-gray-700">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-power-off text-emerald-400"></i>
+            <span id="th-status-label" class="text-xs font-bold text-emerald-400">ONLINE (Siap Terima Pesanan)</span>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="th-status-toggle" onchange="toggleTherapistOnlineStatus()" class="sr-only peer">
+            <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Pending Approval Banner -->
+      <div id="th-pending-approval-banner" class="m-4 bg-amber-50 border-2 border-amber-300 text-amber-900 p-4 rounded-2xl text-xs hidden">
+        <div class="font-bold flex items-center gap-2 text-sm mb-1 text-amber-800">
+          <i class="fa-solid fa-triangle-exclamation"></i> Menunggu Persetujuan Admin
+        </div>
+        <p>Akun terapis Anda sedang dalam proses verifikasi dokumen dan keahlian oleh tim Administrator. Anda belum dapat menerima pesanan pelanggan hingga akun disetujui.</p>
+      </div>
+
+      <!-- Tab 1: Therapist Active Job -->
+      <div id="th-view-jobs" class="th-view-tab p-4">
+        <!-- Active Job Card -->
+        <div id="th-active-job-card" class="bg-white rounded-3xl p-5 border-2 border-emerald-500 shadow-xl hidden">
+          <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-3">
+            <span class="text-xs font-black text-emerald-700 uppercase tracking-wider">Tugas Pijat Aktif</span>
+            <span id="job-order-id" class="text-xs font-bold text-gray-500">ORD-...</span>
+          </div>
+
+          <!-- Customer Info -->
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <h3 id="job-customer-name" class="font-extrabold text-base text-gray-900">Nama Customer</h3>
+              <div id="job-customer-phone" class="text-xs text-gray-500">0812...</div>
+              <div class="text-xs text-gray-600 mt-1 flex items-start gap-1">
+                <i class="fa-solid fa-location-dot text-emerald-600 mt-0.5"></i>
+                <span id="job-customer-address">Alamat</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <span id="job-distance" class="inline-block px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-lg text-xs font-bold">1.2 km</span>
+            </div>
+          </div>
+
+          <!-- Service summary -->
+          <div class="bg-gray-50 p-3 rounded-2xl text-xs space-y-1 mb-3">
+            <div class="flex justify-between">
+              <span class="text-gray-500">Layanan:</span>
+              <span id="job-service-name" class="font-bold text-gray-900">Pijat Tradisional</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">Durasi:</span>
+              <span id="job-duration" class="font-semibold text-gray-900">90 Menit</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">Catatan Khusus:</span>
+              <span id="job-notes" class="text-gray-700 italic">-</span>
+            </div>
+            <div class="flex justify-between pt-1 border-t border-gray-200">
+              <span class="font-bold text-gray-700">Total Tarif:</span>
+              <span id="job-total-price" class="font-bold text-emerald-700 text-sm">Rp 140.000</span>
+            </div>
+          </div>
+
+          <!-- Extra Fee Badge if proposed -->
+          <div id="job-extra-fee-status-badge" class="mb-3 p-2.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs font-semibold hidden">
+            <!-- Rendered by JS -->
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="grid grid-cols-3 gap-2 mb-4">
+            <button id="job-maps-btn" class="py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors">
+              <i class="fa-solid fa-diamond-turn-right"></i> Navigasi
+            </button>
+            <button id="job-chat-btn" class="py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors">
+              <i class="fa-solid fa-comment"></i> Chat
+            </button>
+            <button id="job-call-btn" class="py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors">
+              <i class="fa-solid fa-phone"></i> Telepon
+            </button>
+          </div>
+
+          <!-- Propose extra fee button -->
+          <button id="job-extra-fee-btn" class="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl mb-3 flex items-center justify-center gap-1.5 transition-colors">
+            <i class="fa-solid fa-plus-circle"></i> Ajukan Biaya Tambahan (Transport/Aroma)
+          </button>
+
+          <!-- Step Progression Button -->
+          <div id="job-action-buttons">
+            <!-- Rendered by JS based on status -->
+          </div>
+        </div>
+
+        <!-- No Job Idle Card -->
+        <div id="th-no-job-card" class="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm text-center">
+          <div class="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 text-3xl flex items-center justify-center mx-auto mb-3">
+            <i class="fa-solid fa-bell"></i>
+          </div>
+          <h3 class="font-extrabold text-gray-900 text-base">Menunggu Pesanan Baru</h3>
+          <p class="text-xs text-gray-500 mt-1 max-w-xs mx-auto">Pastikan status Anda ONLINE dan perangkat aktif agar pesanan dari pelanggan sekitar Pekalongan dapat masuk.</p>
+        </div>
+      </div>
+
+      <!-- Tab 2: Therapist History & Earnings -->
+      <div id="th-view-history" class="th-view-tab p-4 hidden">
+        <h2 class="text-lg font-black text-gray-900 mb-1">Riwayat & Pendapatan</h2>
+        <p class="text-xs text-gray-500 mb-4">Ringkasan hasil kerja Anda</p>
+
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div class="bg-emerald-600 text-white p-4 rounded-2xl shadow-md">
+            <div class="text-[11px] text-emerald-100 font-semibold">Total Pendapatan</div>
+            <div id="th-total-earnings" class="text-base font-extrabold mt-1">Rp 0</div>
+          </div>
+          <div class="bg-white border p-4 rounded-2xl shadow-sm">
+            <div class="text-[11px] text-gray-500 font-semibold">Pekerjaan Selesai</div>
+            <div id="th-completed-jobs-count" class="text-base font-extrabold text-gray-900 mt-1">0 Sesi</div>
+          </div>
+        </div>
+
+        <div id="th-history-list">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Therapist Bottom Navigation -->
+      <nav class="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto glass-nav z-40 px-8 py-2 flex items-center justify-around">
+        <button onclick="setTherapistTab('jobs')" id="th-nav-jobs" class="th-nav-btn text-emerald-700 font-bold flex flex-col items-center text-[11px] transition-colors">
+          <i class="fa-solid fa-briefcase text-lg mb-0.5"></i>
+          <span>Pekerjaan</span>
+        </button>
+        <button onclick="setTherapistTab('history')" id="th-nav-history" class="th-nav-btn text-gray-400 flex flex-col items-center text-[11px] transition-colors">
+          <i class="fa-solid fa-chart-line text-lg mb-0.5"></i>
+          <span>Pendapatan</span>
+        </button>
+      </nav>
+    </section>
+
+    <!-- ========================================================
+         VIEW 4: SUPER ADMINISTRATOR DASHBOARD
+         ======================================================== -->
+    <section id="view-admin" class="admin-container hidden p-4 md:p-8 pb-20">
+      <!-- Admin Security Banner -->
+      <div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 mb-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-lg shrink-0">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div>
+            <div class="font-extrabold text-amber-900 text-sm">Mode Evaluasi Administrator (calonbikers85@gmail.com)</div>
+            <div class="text-amber-800">Akun Admin ini ditanam khusus untuk keperluan demo. Pada aplikasi production, wajib gunakan backend server authentication dan password hashing (bcrypt/argon2).</div>
+          </div>
+        </div>
+        <button onclick="logout()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shrink-0 transition-colors">
+          <i class="fa-solid fa-arrow-right-from-bracket mr-1.5"></i> Logout Admin
+        </button>
+      </div>
+
+      <!-- Admin Header & Nav -->
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 class="text-2xl font-black text-gray-900">Panel Kontrol Super Admin</h1>
+          <p class="text-xs text-gray-500">Manajemen pesanan, mitra terapis, pelanggan, tarif layanan, dan riwayat audit.</p>
+        </div>
+        <!-- Admin Tabs -->
+        <div class="flex items-center space-x-2 overflow-x-auto no-scrollbar bg-white p-1.5 rounded-2xl border shadow-sm text-xs font-bold">
+          <button onclick="switchAdminTab('stats')" id="admin-btn-stats" class="admin-nav-btn px-3 py-2 rounded-xl bg-emerald-600 text-white shadow-md">Statistik</button>
+          <button onclick="switchAdminTab('therapists')" id="admin-btn-therapists" class="admin-nav-btn px-3 py-2 rounded-xl text-gray-600 hover:bg-gray-100">Terapis</button>
+          <button onclick="switchAdminTab('customers')" id="admin-btn-customers" class="admin-nav-btn px-3 py-2 rounded-xl text-gray-600 hover:bg-gray-100">Pelanggan</button>
+          <button onclick="switchAdminTab('orders')" id="admin-btn-orders" class="admin-nav-btn px-3 py-2 rounded-xl text-gray-600 hover:bg-gray-100">Pesanan</button>
+          <button onclick="switchAdminTab('services')" id="admin-btn-services" class="admin-nav-btn px-3 py-2 rounded-xl text-gray-600 hover:bg-gray-100">Layanan & Tarif</button>
+          <button onclick="switchAdminTab('price-history')" id="admin-btn-price-history" class="admin-nav-btn px-3 py-2 rounded-xl text-gray-600 hover:bg-gray-100">Audit Tarif</button>
+          <button onclick="switchAdminTab('reviews')" id="admin-btn-reviews" class="admin-nav-btn px-3 py-2 rounded-xl text-gray-600 hover:bg-gray-100">Ulasan</button>
+        </div>
+      </div>
+
+      <!-- Admin Section 1: Dashboard Stats -->
+      <div id="admin-section-stats" class="admin-section-view">
+        <!-- Stat Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="bg-white p-5 rounded-2xl border shadow-sm">
+            <div class="text-xs text-gray-500 font-semibold mb-1">Total Pendapatan Selesai</div>
+            <div id="admin-stat-revenue" class="text-xl font-black text-emerald-700">Rp 0</div>
+            <div class="text-[11px] text-emerald-600 mt-1"><i class="fa-solid fa-arrow-trend-up mr-1"></i>Akumulasi transaksi</div>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border shadow-sm">
+            <div class="text-xs text-gray-500 font-semibold mb-1">Total Pesanan</div>
+            <div id="admin-stat-orders" class="text-xl font-black text-gray-900">0</div>
+            <div class="text-[11px] text-gray-500 mt-1">Selesai: <span id="admin-stat-completed">0</span> • Aktif: <span id="admin-stat-active">0</span></div>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border shadow-sm">
+            <div class="text-xs text-gray-500 font-semibold mb-1">Total Pelanggan</div>
+            <div id="admin-stat-customers" class="text-xl font-black text-gray-900">0</div>
+            <div class="text-[11px] text-gray-500 mt-1">Pengguna terdaftar</div>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border shadow-sm">
+            <div class="text-xs text-gray-500 font-semibold mb-1">Mitra Terapis</div>
+            <div id="admin-stat-therapists" class="text-xl font-black text-gray-900">0</div>
+            <div class="text-[11px] text-gray-500 mt-1">Status persetujuan & aktif</div>
+          </div>
+        </div>
+
+        <!-- Recaps: Harian, Mingguan, Bulanan -->
+        <div class="bg-white p-6 rounded-2xl border shadow-sm mb-6">
+          <h3 class="text-base font-extrabold text-gray-900 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-calendar-check text-emerald-600"></i> Rekapan Pekerjaan & Omzet
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 bg-gray-50 rounded-xl border">
+              <div class="text-xs font-bold text-gray-500 uppercase tracking-wider">Rekapan Hari Ini</div>
+              <div id="recap-daily-income" class="text-lg font-black text-gray-900 mt-1">Rp 0</div>
+              <div id="recap-daily-orders" class="text-xs text-gray-500 mt-0.5">0 Selesai</div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-xl border">
+              <div class="text-xs font-bold text-gray-500 uppercase tracking-wider">Rekapan 7 Hari Terakhir</div>
+              <div id="recap-weekly-income" class="text-lg font-black text-emerald-700 mt-1">Rp 0</div>
+              <div id="recap-weekly-orders" class="text-xs text-gray-500 mt-0.5">0 Selesai</div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-xl border">
+              <div class="text-xs font-bold text-gray-500 uppercase tracking-wider">Rekapan Bulan Ini</div>
+              <div id="recap-monthly-income" class="text-lg font-black text-blue-700 mt-1">Rp 0</div>
+              <div id="recap-monthly-orders" class="text-xs text-gray-500 mt-0.5">0 Selesai</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Section 2: Therapists Management -->
+      <div id="admin-section-therapists" class="admin-section-view hidden">
+        <div class="mb-6">
+          <h3 class="text-base font-extrabold text-gray-900 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-user-clock text-amber-500"></i> Menunggu Persetujuan Akun
+          </h3>
+          <div id="admin-pending-therapists-list" class="space-y-3">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+        <div>
+          <h3 class="text-base font-extrabold text-gray-900 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-user-check text-emerald-600"></i> Daftar Mitra Terapis Terdaftar
+          </h3>
+          <div id="admin-approved-therapists-list" class="space-y-3">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Section 3: Customers Management -->
+      <div id="admin-section-customers" class="admin-section-view hidden">
+        <h3 class="text-base font-extrabold text-gray-900 mb-4">Daftar Pelanggan Terdaftar</h3>
+        <div id="admin-customers-list" class="space-y-3">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Admin Section 4: All Orders Management -->
+      <div id="admin-section-orders" class="admin-section-view hidden">
+        <h3 class="text-base font-extrabold text-gray-900 mb-4">Seluruh Pesanan PIJATKU</h3>
+        <div class="bg-white rounded-2xl border shadow-sm overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-gray-50 border-b text-[11px] font-bold text-gray-500 uppercase">
+                <th class="p-3">ID Pesanan</th>
+                <th class="p-3">Pelanggan</th>
+                <th class="p-3">Terapis</th>
+                <th class="p-3">Layanan</th>
+                <th class="p-3">Total</th>
+                <th class="p-3">Status</th>
+                <th class="p-3 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="admin-orders-table-body">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Admin Section 5: Services & Pricing CRUD -->
+      <div id="admin-section-services" class="admin-section-view hidden">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base font-extrabold text-gray-900">Katalog Layanan & Tarif Pijat</h3>
+          <button onclick="openAddServiceModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5">
+            <i class="fa-solid fa-plus"></i> Tambah Layanan Baru
+          </button>
+        </div>
+        <div id="admin-services-list" class="space-y-3">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Admin Section 6: Price Audit Log -->
+      <div id="admin-section-price-history" class="admin-section-view hidden">
+        <h3 class="text-base font-extrabold text-gray-900 mb-1">Riwayat Audit Perubahan Harga</h3>
+        <p class="text-xs text-gray-500 mb-4">Catatan historis setiap perubahan tarif layanan oleh administrator</p>
+        <div class="bg-white rounded-2xl border shadow-sm overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-gray-50 border-b text-[11px] font-bold text-gray-500 uppercase">
+                <th class="p-3">Tanggal</th>
+                <th class="p-3">Layanan</th>
+                <th class="p-3">Tarif Lama</th>
+                <th class="p-3">Tarif Baru</th>
+                <th class="p-3">Alasan Penyesuaian</th>
+                <th class="p-3">Diubah Oleh</th>
+              </tr>
+            </thead>
+            <tbody id="admin-price-history-body">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Admin Section 7: Reviews -->
+      <div id="admin-section-reviews" class="admin-section-view hidden">
+        <h3 class="text-base font-extrabold text-gray-900 mb-4">Ulasan & Rating Pelanggan</h3>
+        <div id="admin-reviews-list">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========================================================
+       MODALS SYSTEM
+       ======================================================== -->
+
+  <!-- MODAL: OTP SIMULATION -->
+  <div id="otp-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center">
+      <div class="w-14 h-14 bg-emerald-100 text-emerald-700 text-2xl rounded-full flex items-center justify-center mx-auto mb-3">
+        <i class="fa-solid fa-message"></i>
+      </div>
+      <h3 class="text-lg font-black text-gray-900">Verifikasi Nomor HP</h3>
+      <p class="text-xs text-gray-500 mt-1">Kode OTP telah dikirimkan ke <span id="otp-phone-display" class="font-bold text-gray-800">0812...</span></p>
+      
+      <!-- Simulated SMS Display -->
+      <div class="my-4 p-3 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900">
+        <div class="font-bold text-[10px] text-amber-700 uppercase tracking-wider mb-1">Simulasi Pesan SMS Masuk:</div>
+        <div>"Gunakan kode OTP <b id="otp-code-hint" class="text-base text-emerald-700">123456</b> untuk verifikasi akun PIJATKU Anda. Jangan bagikan kepada siapapun."</div>
+      </div>
+
+      <input type="text" id="otp-input" maxlength="6" class="w-full text-center tracking-[0.4em] font-mono text-2xl font-bold py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none mb-4" placeholder="••••••">
+      
+      <div class="space-y-2">
+        <button onclick="verifyOTP()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow-md transition-all">
+          Verifikasi & Masuk
+        </button>
+        <button onclick="closeModal('otp-modal')" class="w-full py-2.5 text-gray-500 hover:text-gray-700 text-xs font-semibold">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CUSTOMER BOOKING FLOW -->
+  <div id="booking-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-3">
+    <div class="bg-white rounded-3xl max-w-md w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- Header -->
+      <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-emerald-800 text-white">
+        <div>
+          <div class="text-[10px] text-emerald-200 font-bold uppercase">Konfirmasi Pemesanan</div>
+          <h3 id="booking-service-name" class="font-extrabold text-base">Pijat Tradisional Jawa</h3>
+        </div>
+        <button onclick="closeModal('booking-modal')" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Scrollable Body -->
+      <div class="p-4 overflow-y-auto space-y-4 text-xs">
+        <p id="booking-service-desc" class="text-gray-500 leading-relaxed"></p>
+
+        <!-- Duration Selector -->
+        <div>
+          <label class="block font-bold text-gray-800 mb-1.5">Pilih Durasi Layanan</label>
+          <div id="booking-durations" class="flex space-x-2">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Date & Time -->
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-gray-800 mb-1">Tanggal</label>
+            <input type="date" id="booking-date" class="w-full p-2.5 rounded-xl border bg-white font-medium">
+          </div>
+          <div>
+            <label class="block font-bold text-gray-800 mb-1">Jam Kedatangan</label>
+            <input type="time" id="booking-time" class="w-full p-2.5 rounded-xl border bg-white font-medium">
+          </div>
+        </div>
+
+        <!-- Location Pin & Leaflet Map -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="font-bold text-gray-800">Alamat & Titik Lokasi Rumah</label>
+            <button type="button" onclick="requestGPS((c, e) => { AppState.customerLocation = c; initBookingMap(c.lat, c.lng); showToast(e || 'GPS berhasil dikalibrasi', e ? 'alert' : 'success'); })" class="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
+              <i class="fa-solid fa-location-crosshairs"></i> Deteksi GPS
+            </button>
+          </div>
+          <div id="booking-leaflet-map" class="w-full h-36 rounded-xl border mb-2"></div>
+          <input type="text" id="booking-address" class="w-full p-2.5 rounded-xl border bg-gray-50" placeholder="Alamat lengkap...">
+        </div>
+
+        <!-- Preferred Therapist -->
+        <div>
+          <label class="block font-bold text-gray-800 mb-1.5">Pilih Mitra Terapis</label>
+          <div id="booking-therapists-list" class="space-y-1.5 max-h-40 overflow-y-auto">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label class="block font-bold text-gray-800 mb-1">Catatan untuk Terapis (Opsional)</label>
+          <input type="text" id="booking-notes" class="w-full p-2.5 rounded-xl border" placeholder="Contoh: Fokus punggung bawah, masuk angin, dsb.">
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="p-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+        <div>
+          <div class="text-[10px] text-gray-400 font-semibold">Total Biaya</div>
+          <div id="booking-total-price" class="text-lg font-black text-emerald-700">Rp 100.000</div>
+        </div>
+        <button onclick="confirmBookingOrder()" class="py-3 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md transition-all">
+          Konfirmasi & Pesan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: REALTIME ORDER TRACKING & LEAFLET MAP -->
+  <div id="tracking-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-3">
+    <div class="bg-white rounded-3xl max-w-md w-full max-h-[94vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- Header -->
+      <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-900 text-white">
+        <div>
+          <div class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Pelacakan Langsung</div>
+          <h3 id="track-order-id" class="font-extrabold text-sm">ORD-...</h3>
+        </div>
+        <button onclick="closeTrackingModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-4 overflow-y-auto space-y-3.5 text-xs">
+        <!-- Status Stepper Header -->
+        <div class="flex items-center justify-between">
+          <div>
+            <div id="track-service-name" class="font-extrabold text-sm text-gray-900">Layanan</div>
+            <div class="text-gray-500"><span id="track-service-duration">60 Menit</span> • <span id="track-service-price" class="font-bold text-emerald-700">Rp ...</span></div>
+          </div>
+          <div id="track-status-badge">Menunggu</div>
+        </div>
+
+        <!-- Visual Stepper Progress -->
+        <div class="bg-gray-50 p-3 rounded-2xl border">
+          <div class="flex justify-between items-center text-[10px] font-bold text-gray-500">
+            <div class="flex flex-col items-center">
+              <div id="step-dot-menunggu" class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] mb-1">1</div>
+              <span>Menunggu</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <div id="step-dot-diterima" class="w-6 h-6 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center text-[10px] mb-1">2</div>
+              <span>Diterima</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <div id="step-dot-menuju_lokasi" class="w-6 h-6 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center text-[10px] mb-1">3</div>
+              <span>Menuju</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <div id="step-dot-tiba" class="w-6 h-6 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center text-[10px] mb-1">4</div>
+              <span>Tiba</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <div id="step-dot-sesi_dimulai" class="w-6 h-6 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center text-[10px] mb-1">5</div>
+              <span>Sesi</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <div id="step-dot-selesai" class="w-6 h-6 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center text-[10px] mb-1">6</div>
+              <span>Selesai</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leaflet Tracking Map -->
+        <div class="relative">
+          <div id="tracking-leaflet-map" class="w-full h-44 rounded-2xl border shadow-inner"></div>
+          <div class="absolute bottom-2 left-2 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-md z-[1000] flex items-center gap-1">
+            <i class="fa-solid fa-motorcycle text-emerald-600"></i>
+            <span id="track-distance-text">Menghitung jarak...</span>
+          </div>
+        </div>
+
+        <!-- Therapist Info Card -->
+        <div class="bg-white rounded-2xl p-3 border shadow-sm flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <img id="track-therapist-photo" src="" class="w-12 h-12 rounded-full object-cover border">
+            <div>
+              <div id="track-therapist-name" class="font-extrabold text-sm text-gray-900">Nama Terapis</div>
+              <div class="text-[11px] text-amber-500 font-semibold flex items-center gap-1">
+                <i class="fa-solid fa-star"></i> <span id="track-therapist-rating">4.9</span> • Mitra Terverifikasi
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center space-x-1.5">
+            <button id="track-chat-btn" class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 flex items-center justify-center font-bold">
+              <i class="fa-solid fa-comment"></i>
+            </button>
+            <button id="track-call-btn" class="w-9 h-9 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 flex items-center justify-center font-bold">
+              <i class="fa-solid fa-phone"></i>
+            </button>
+            <button id="track-maps-btn" class="w-9 h-9 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 flex items-center justify-center font-bold">
+              <i class="fa-solid fa-diamond-turn-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Session Countdown Timer -->
+        <div id="track-timer-container" class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-4 rounded-2xl text-center shadow-md hidden">
+          <div class="text-[11px] text-emerald-200 font-bold uppercase tracking-wider">Waktu Sesi Pijat Berjalan</div>
+          <div id="session-timer-text" class="text-3xl font-black font-mono my-1 timer-display">60:00</div>
+          <div class="text-[10px] text-emerald-100">Selamat menikmati relaksasi pijat di rumah Anda</div>
+        </div>
+
+        <!-- Extra Fee Approval Card (Customer Action) -->
+        <div id="track-extra-fee-card" class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-3.5 text-amber-900 hidden">
+          <div class="font-bold text-xs flex items-center gap-1.5 mb-1">
+            <i class="fa-solid fa-file-invoice-dollar text-amber-600"></i> Pengajuan Biaya Tambahan
+          </div>
+          <div id="extra-fee-status" class="text-xs mb-2">Terapis mengajukan biaya tambahan:</div>
+          <div class="bg-white p-2.5 rounded-xl border border-amber-200 mb-3 flex items-center justify-between">
+            <span id="extra-fee-reason" class="text-xs font-medium text-gray-700">Alasan</span>
+            <span id="extra-fee-amount" class="text-xs font-extrabold text-amber-700">Rp 15.000</span>
+          </div>
+          <div id="extra-fee-actions" class="flex gap-2">
+            <button onclick="respondExtraFee('approve')" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm">
+              <i class="fa-solid fa-check mr-1"></i> Setujui Biaya
+            </button>
+            <button onclick="respondExtraFee('reject')" class="flex-1 py-2 bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold rounded-xl text-xs">
+              <i class="fa-solid fa-xmark mr-1"></i> Tolak Biaya
+            </button>
+          </div>
+        </div>
+
+        <!-- Review Prompt -->
+        <div id="track-review-prompt" class="bg-blue-50 border border-blue-200 rounded-2xl p-3.5 text-center hidden">
+          <div class="font-bold text-sm text-blue-900 mb-1">Sesi Pijat Telah Selesai!</div>
+          <p class="text-xs text-blue-700 mb-3">Bagikan pengalaman relaksasi Anda untuk membantu terapis kami.</p>
+          <button onclick="openReviewModal(currentTrackingOrderId)" class="py-2.5 px-5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs shadow-sm">
+            <i class="fa-solid fa-star mr-1"></i> Beri Rating & Review
+          </button>
+        </div>
+
+        <!-- Destination Address -->
+        <div class="text-[11px] text-gray-400 flex items-start gap-1.5">
+          <i class="fa-solid fa-house-chimney text-emerald-600 mt-0.5"></i>
+          <span id="track-customer-address">Alamat</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: REALTIME CHAT -->
+  <div id="chat-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-3">
+    <div class="bg-white rounded-3xl max-w-md w-full h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- Chat Header -->
+      <div class="p-3.5 border-b border-gray-100 flex items-center justify-between bg-emerald-800 text-white">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-xs">
+            <i class="fa-solid fa-comments"></i>
+          </div>
+          <div>
+            <h3 id="chat-partner-name" class="font-bold text-sm">Obrolan</h3>
+            <span id="chat-order-tag" class="text-[10px] text-emerald-200">ORD-...</span>
+          </div>
+        </div>
+        <button onclick="closeModal('chat-modal')" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Quick Chips -->
+      <div class="px-3 py-2 bg-gray-50 border-b flex space-x-1.5 overflow-x-auto no-scrollbar text-[11px]">
+        <button onclick="sendChatMessage('Halo, apakah posisi sudah dekat?')" class="px-2.5 py-1 bg-white border rounded-full text-gray-700 whitespace-nowrap hover:bg-emerald-50">Posisi sudah dekat?</button>
+        <button onclick="sendChatMessage('Saya sudah siap di rumah.')" class="px-2.5 py-1 bg-white border rounded-full text-gray-700 whitespace-nowrap hover:bg-emerald-50">Siap di rumah</button>
+        <button onclick="sendChatMessage('Mohon bawa minyak tanpa aroma.')" class="px-2.5 py-1 bg-white border rounded-full text-gray-700 whitespace-nowrap hover:bg-emerald-50">Minyak tanpa aroma</button>
+      </div>
+
+      <!-- Messages Area -->
+      <div id="chat-messages-container" class="flex-1 p-4 overflow-y-auto bg-gray-50/50">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Input Area -->
+      <div class="p-3 bg-white border-t flex items-center space-x-2">
+        <input type="text" id="chat-input" onkeydown="if(event.key === 'Enter') sendChatMessage()" placeholder="Ketik pesan..." class="flex-1 px-4 py-2.5 rounded-full border border-gray-300 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        <button onclick="sendChatMessage()" class="w-10 h-10 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center font-bold shadow-md">
+          <i class="fa-solid fa-paper-plane text-xs"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DIRECT CALL SIMULATION -->
+  <div id="call-modal" class="fixed inset-0 bg-gray-950/95 backdrop-blur-md z-50 hidden items-center justify-center p-4">
+    <div class="max-w-sm w-full text-center text-white">
+      <div class="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500 to-teal-700 mx-auto flex items-center justify-center text-4xl shadow-2xl mb-4 border-4 border-white/20">
+        <i class="fa-solid fa-user"></i>
+      </div>
+      <h3 id="call-contact-name" class="font-extrabold text-xl">Kontak</h3>
+      <div id="call-contact-phone" class="text-xs text-gray-400 mt-0.5">0812...</div>
+      <div id="call-status-text" class="text-sm font-semibold text-emerald-400 mt-3 animate-pulse">Memanggil...</div>
+      <div id="call-timer" class="text-2xl font-mono font-bold text-white mt-2 hidden">00:00</div>
+
+      <div class="mt-12 flex items-center justify-center space-x-6">
+        <button onclick="endCall()" class="w-16 h-16 rounded-full bg-rose-600 hover:bg-rose-700 flex items-center justify-center text-2xl text-white shadow-xl transition-transform active:scale-95">
+          <i class="fa-solid fa-phone-slash"></i>
+        </button>
+      </div>
+      
+      <div class="mt-8 text-[11px] text-gray-500">
+        Simulasi panggilan suara in-app PIJATKU.
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: RATING & REVIEW -->
+  <div id="review-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center">
+      <input type="hidden" id="review-order-id">
+      <div class="w-14 h-14 bg-amber-100 text-amber-600 text-2xl rounded-full flex items-center justify-center mx-auto mb-3">
+        <i class="fa-solid fa-star"></i>
+      </div>
+      <h3 class="text-lg font-black text-gray-900">Beri Ulasan Terapis</h3>
+      <p class="text-xs text-gray-500 mt-1">Bagaimana pelayanan dan pijatan terapis Anda?</p>
+
+      <!-- 5 Interactive Stars -->
+      <div class="flex items-center justify-center space-x-2 my-4">
+        <i id="star-1" onclick="setStarRating(1)" class="fa-solid fa-star text-2xl text-amber-400 cursor-pointer"></i>
+        <i id="star-2" onclick="setStarRating(2)" class="fa-solid fa-star text-2xl text-amber-400 cursor-pointer"></i>
+        <i id="star-3" onclick="setStarRating(3)" class="fa-solid fa-star text-2xl text-amber-400 cursor-pointer"></i>
+        <i id="star-4" onclick="setStarRating(4)" class="fa-solid fa-star text-2xl text-amber-400 cursor-pointer"></i>
+        <i id="star-5" onclick="setStarRating(5)" class="fa-solid fa-star text-2xl text-amber-400 cursor-pointer"></i>
+      </div>
+
+      <textarea id="review-comment" rows="3" class="w-full p-3 rounded-xl border border-gray-300 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none mb-4" placeholder="Tulis ulasan Anda (contoh: Pijatan sangat pas, tepat waktu, ramah...)"></textarea>
+
+      <div class="space-y-2">
+        <button onclick="submitReview()" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md transition-all">
+          Kirim Ulasan & Rating
+        </button>
+        <button onclick="closeModal('review-modal')" class="w-full py-2 text-gray-500 text-xs">
+          Lewati
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: THERAPIST INCOMING ORDER POPUP -->
+  <div id="incoming-order-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-5 max-w-sm w-full shadow-2xl text-center border-4 border-emerald-500">
+      <div class="w-14 h-14 bg-emerald-100 text-emerald-700 text-2xl rounded-full flex items-center justify-center mx-auto mb-2 animate-bounce">
+        <i class="fa-solid fa-bell"></i>
+      </div>
+      <h3 class="text-lg font-black text-gray-900">Pesanan Pelanggan Masuk!</h3>
+      <p class="text-xs text-gray-500">Pelanggan baru membutuhkan layanan pijat Anda</p>
+
+      <div class="bg-gray-50 rounded-2xl p-3.5 my-3 text-left text-xs space-y-1.5 border">
+        <div class="flex justify-between">
+          <span class="text-gray-500">Nama Customer:</span>
+          <span id="incoming-customer-name" class="font-bold text-gray-900">Dimas Arya</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Layanan:</span>
+          <span id="incoming-service-name" class="font-bold text-emerald-800">Pijat Tradisional</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Durasi:</span>
+          <span id="incoming-service-duration" class="font-bold text-gray-900">90 Menit</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Jarak ke Customer:</span>
+          <span id="incoming-distance" class="font-bold text-blue-700">1.2 km</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Alamat:</span>
+          <span id="incoming-customer-address" class="font-medium text-gray-700 truncate max-w-[180px]">Pekalongan</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Catatan:</span>
+          <span id="incoming-notes" class="text-gray-700 italic">-</span>
+        </div>
+        <div class="flex justify-between pt-1 border-t">
+          <span class="font-bold text-gray-700">Total Tarif:</span>
+          <span id="incoming-service-price" class="font-black text-emerald-700 text-sm">Rp 140.000</span>
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        <button onclick="acceptIncomingOrder()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md">
+          <i class="fa-solid fa-check mr-1"></i> Terima Pesanan
+        </button>
+        <button onclick="rejectIncomingOrder()" class="flex-1 py-3 bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold rounded-xl text-xs">
+          <i class="fa-solid fa-xmark mr-1"></i> Tolak Pesanan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PROPOSE EXTRA FEE (THERAPIST) -->
+  <div id="extra-fee-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl">
+      <input type="hidden" id="propose-fee-order-id">
+      <h3 class="text-base font-black text-gray-900 mb-1">Ajukan Biaya Tambahan</h3>
+      <p class="text-xs text-gray-500 mb-4">Biaya tambahan hanya akan ditagihkan jika disetujui pelanggan.</p>
+
+      <div class="space-y-3 text-xs mb-4">
+        <div>
+          <label class="block font-semibold text-gray-700 mb-1">Nominal Biaya Tambahan (Rp)</label>
+          <input type="number" id="propose-fee-amount" step="5000" min="5000" class="w-full p-2.5 rounded-xl border" placeholder="Contoh: 15000">
+        </div>
+        <div>
+          <label class="block font-semibold text-gray-700 mb-1">Alasan Pengajuan</label>
+          <input type="text" id="propose-fee-reason" class="w-full p-2.5 rounded-xl border" placeholder="Contoh: Ongkos jarak jauh malam hari / Minyak cendana spesial">
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        <button onclick="submitProposeExtraFee()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs">
+          Kirim Pengajuan
+        </button>
+        <button onclick="closeModal('extra-fee-modal')" class="py-2.5 px-4 bg-gray-100 text-gray-600 font-bold rounded-xl text-xs">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADMIN SERVICE ADD/EDIT -->
+  <div id="service-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl">
+      <h3 id="service-modal-title" class="text-base font-black text-gray-900 mb-3">Kelola Layanan</h3>
+      <form onsubmit="saveServiceModal(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="edit-service-id">
+        <div>
+          <label class="block font-semibold text-gray-700 mb-1">Nama Layanan</label>
+          <input type="text" id="service-form-name" required class="w-full p-2.5 rounded-xl border">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Kategori</label>
+            <select id="service-form-category" class="w-full p-2.5 rounded-xl border bg-white">
+              <option value="Relaksasi">Relaksasi</option>
+              <option value="Refleksi">Refleksi</option>
+              <option value="Terapi">Terapi</option>
+              <option value="Ibu & Anak">Ibu & Anak</option>
+              <option value="Kecantikan">Kecantikan</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Tagline</label>
+            <input type="text" id="service-form-tagline" class="w-full p-2.5 rounded-xl border" placeholder="Contoh: Terapi otot kaku">
+          </div>
+        </div>
+        <div>
+          <label class="block font-semibold text-gray-700 mb-1">Deskripsi Lengkap</label>
+          <textarea id="service-form-desc" rows="2" class="w-full p-2.5 rounded-xl border"></textarea>
+        </div>
+        <div class="p-3 bg-gray-50 rounded-xl border space-y-2">
+          <div class="font-bold text-gray-800">Tarif Berdasarkan Durasi</div>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="text-[10px] text-gray-500">60 Menit (Rp)</label>
+              <input type="number" id="service-form-p60" step="5000" class="w-full p-1.5 rounded border">
+            </div>
+            <div>
+              <label class="text-[10px] text-gray-500">90 Menit (Rp)</label>
+              <input type="number" id="service-form-p90" step="5000" class="w-full p-1.5 rounded border">
+            </div>
+            <div>
+              <label class="text-[10px] text-gray-500">120 Menit (Rp)</label>
+              <input type="number" id="service-form-p120" step="5000" class="w-full p-1.5 rounded border">
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="submit" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md">
+            Simpan Perubahan Tarif
+          </button>
+          <button type="button" onclick="closeModal('service-modal')" class="py-3 px-4 bg-gray-100 text-gray-600 font-bold rounded-xl text-xs">
+            Batal
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <script>
+
+const DEFAULT_DATA = {
+  services: [
+  {
+    "id": "srv-1",
+    "name": "Pijat Tradisional Jawa",
+    "tagline": "Relaksasi otot kaku dan melancarkan peredaran darah",
+    "description": "Kombinasi pijat urut tradisional khas Jawa dengan minyak aromaterapi alami. Efektif meredakan pegal linu, kelelahan fisik, dan masuk angin.",
+    "basePrice": 100000,
+    "durations": [
+      {
+        "minutes": 60,
+        "price": 100000
+      },
+      {
+        "minutes": 90,
+        "price": 140000
+      },
+      {
+        "minutes": 120,
+        "price": 180000
+      }
+    ],
+    "icon": "fa-spa",
+    "badge": "Terfavorit",
+    "category": "Relaksasi"
+  },
+  {
+    "id": "srv-2",
+    "name": "Refleksi Kaki & Tangan",
+    "tagline": "Titik akupresur untuk vitalitas dan stimulasi organ",
+    "description": "Terapi pijat titik refleksi telapak kaki dan tangan untuk menstimulasi fungsi organ tubuh, mengurangi stres, dan meningkatkan imunitas.",
+    "basePrice": 85000,
+    "durations": [
+      {
+        "minutes": 60,
+        "price": 85000
+      },
+      {
+        "minutes": 90,
+        "price": 120000
+      }
+    ],
+    "icon": "fa-shoe-prints",
+    "badge": "Populer",
+    "category": "Refleksi"
+  },
+  {
+    "id": "srv-3",
+    "name": "Deep Tissue & Sport Massage",
+    "tagline": "Tekanan terfokus untuk pemulihan cedera dan otot tegang",
+    "description": "Terapi dengan tekanan mendalam untuk melepaskan simpul otot (muscle knot), asam laktat, dan memulihkan kondisi pasca berolahraga berat.",
+    "basePrice": 130000,
+    "durations": [
+      {
+        "minutes": 60,
+        "price": 130000
+      },
+      {
+        "minutes": 90,
+        "price": 180000
+      },
+      {
+        "minutes": 120,
+        "price": 230000
+      }
+    ],
+    "icon": "fa-dumbbell",
+    "badge": "Intensif",
+    "category": "Terapi"
+  },
+  {
+    "id": "srv-4",
+    "name": "Aromaterapi & Lulur Keraton",
+    "tagline": "Pijat lembut dengan minyak esensial dan eksfoliasi kulit",
+    "description": "Perawatan memanjakan tubuh dengan scrub rempah alami untuk mengangkat sel kulit mati, dilanjutkan pijat aromaterapi bunga melati dan lavender.",
+    "basePrice": 140000,
+    "durations": [
+      {
+        "minutes": 90,
+        "price": 140000
+      },
+      {
+        "minutes": 120,
+        "price": 195000
+      }
+    ],
+    "icon": "fa-feather-pointed",
+    "badge": "Relaksasi Mewah",
+    "category": "Kecantikan"
+  },
+  {
+    "id": "srv-5",
+    "name": "Pijat Ibu Hamil & Pasca Salin",
+    "tagline": "Teknik khusus bersertifikat aman untuk calon ibu",
+    "description": "Pijat lembut posisi menyamping untuk meredakan nyeri pinggang, bengkak kaki, dan ketegangan pada ibu hamil dan pemulihan setelah melahirkan.",
+    "basePrice": 120000,
+    "durations": [
+      {
+        "minutes": 60,
+        "price": 120000
+      },
+      {
+        "minutes": 90,
+        "price": 165000
+      }
+    ],
+    "icon": "fa-person-pregnant",
+    "badge": "Khusus Ibu",
+    "category": "Ibu & Anak"
+  },
+  {
+    "id": "srv-6",
+    "name": "Totok Wajah & Bekam Kering",
+    "tagline": "Segarkan aura wajah dan lancarkan sirkulasi kepala",
+    "description": "Akupresur wajah untuk peremajaan kulit dan meredakan migrain/sinus, dikombinasikan bekam angin kering untuk membuang toksin tubuh.",
+    "basePrice": 95000,
+    "durations": [
+      {
+        "minutes": 60,
+        "price": 95000
+      },
+      {
+        "minutes": 90,
+        "price": 135000
+      }
+    ],
+    "icon": "fa-face-smile",
+    "badge": "Segar",
+    "category": "Terapi"
+  }
+],
+  therapists: [
+  {
+    "id": "th-1",
+    "name": "Budi Santoso, S.Tr.Kes",
+    "email": "budi.terapis@gmail.com",
+    "phone": "081234567891",
+    "password": "terapisbudi123",
+    "role": "therapist",
+    "gender": "Laki-laki",
+    "specialties": [
+      "Pijat Tradisional Jawa",
+      "Deep Tissue & Sport Massage",
+      "Refleksi Kaki"
+    ],
+    "experienceYears": 7,
+    "rating": 4.9,
+    "reviewCount": 48,
+    "status": "approved",
+    "isActive": true,
+    "isOnline": true,
+    "photo": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=400&auto=format&fit=crop&q=80",
+    "address": "Jl. Hayam Wuruk No. 14, Pekalongan Barat",
+    "lat": -6.886,
+    "lng": 109.671,
+    "bio": "Spesialis pemulihan otot kaku dan saraf terjepit dengan pengalaman klinik dan panggilan terpercaya."
+  },
+  {
+    "id": "th-2",
+    "name": "Siti Rahmawati",
+    "email": "siti.rahma@gmail.com",
+    "phone": "081234567892",
+    "password": "terapissiti123",
+    "role": "therapist",
+    "gender": "Perempuan",
+    "specialties": [
+      "Pijat Ibu Hamil & Pasca Salin",
+      "Aromaterapi & Lulur Keraton",
+      "Pijat Tradisional Jawa"
+    ],
+    "experienceYears": 5,
+    "rating": 4.8,
+    "reviewCount": 36,
+    "status": "approved",
+    "isActive": true,
+    "isOnline": true,
+    "photo": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80",
+    "address": "Jl. Sultan Agung No. 28, Pekalongan Timur",
+    "lat": -6.892,
+    "lng": 109.68,
+    "bio": "Sertifikasi kebidanan dan perawatan relaksasi ibu hamil. Lembut, higienis, dan ramah."
+  },
+  {
+    "id": "th-3",
+    "name": "Ahmad Fauzi",
+    "email": "ahmad.fauzi@gmail.com",
+    "phone": "081234567893",
+    "password": "terapisahmad123",
+    "role": "therapist",
+    "gender": "Laki-laki",
+    "specialties": [
+      "Totok Wajah & Bekam Kering",
+      "Refleksi Kaki & Tangan",
+      "Pijat Tradisional Jawa"
+    ],
+    "experienceYears": 4,
+    "rating": 4.7,
+    "reviewCount": 22,
+    "status": "approved",
+    "isActive": true,
+    "isOnline": false,
+    "photo": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80",
+    "address": "Jl. Progo No. 5, Pekalongan Utara",
+    "lat": -6.879,
+    "lng": 109.673,
+    "bio": "Ahli totok aura wajah dan bekam sunnah tanpa rasa sakit. Bekerja profesional dan tepat waktu."
+  },
+  {
+    "id": "th-4",
+    "name": "Dewi Lestari",
+    "email": "dewi.lestari@gmail.com",
+    "phone": "081234567894",
+    "password": "terapisdewi123",
+    "role": "therapist",
+    "gender": "Perempuan",
+    "specialties": [
+      "Aromaterapi & Lulur Keraton",
+      "Pijat Tradisional Jawa"
+    ],
+    "experienceYears": 3,
+    "rating": 5,
+    "reviewCount": 1,
+    "status": "pending",
+    "isActive": true,
+    "isOnline": false,
+    "photo": "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&auto=format&fit=crop&q=80",
+    "address": "Jl. Kurinci No. 12, Pekalongan Selatan",
+    "lat": -6.901,
+    "lng": 109.668,
+    "bio": "Terapis baru dengan sertifikasi SPA Nasional 2024. Menunggu verifikasi admin."
+  }
+],
+  customers: [
+  {
+    "id": "cust-1",
+    "name": "Dimas Arya Nugraha",
+    "email": "dimas.arya@gmail.com",
+    "phone": "081987654321",
+    "password": "customerdimas123",
+    "role": "customer",
+    "isVerified": true,
+    "address": "Perumahan Griya Tirto Indah Blok C No. 4, Pekalongan",
+    "lat": -6.8895,
+    "lng": 109.6745,
+    "createdAt": "2026-08-10T10:00:00Z"
+  },
+  {
+    "id": "cust-2",
+    "name": "Anisa Putri Wijaya",
+    "email": "anisa.putri@gmail.com",
+    "phone": "081987654322",
+    "password": "customeranisa123",
+    "role": "customer",
+    "isVerified": true,
+    "address": "Jl. Veteran No. 15, Pekalongan",
+    "lat": -6.887,
+    "lng": 109.678,
+    "createdAt": "2026-08-20T14:30:00Z"
+  }
+],
+  orders: [
+  {
+    "id": "ORD-20260910-001",
+    "customerId": "cust-1",
+    "customerName": "Dimas Arya Nugraha",
+    "customerPhone": "081987654321",
+    "customerAddress": "Perumahan Griya Tirto Indah Blok C No. 4, Pekalongan",
+    "customerLat": -6.8895,
+    "customerLng": 109.6745,
+    "therapistId": "th-1",
+    "therapistName": "Budi Santoso, S.Tr.Kes",
+    "therapistPhone": "081234567891",
+    "serviceId": "srv-1",
+    "serviceName": "Pijat Tradisional Jawa",
+    "durationMinutes": 90,
+    "basePrice": 140000,
+    "extraFee": {
+      "amount": 15000,
+      "reason": "Minyak Aromaterapi Esensial Cendana Premium",
+      "status": "approved"
+    },
+    "totalPrice": 155000,
+    "status": "selesai",
+    "scheduledDate": "2026-09-10",
+    "scheduledTime": "19:00",
+    "notes": "Tolong fokus di pundak dan punggung bawah",
+    "createdAt": "2026-09-10T18:45:00Z",
+    "acceptedAt": "2026-09-10T18:47:00Z",
+    "startedAt": "2026-09-10T19:05:00Z",
+    "completedAt": "2026-09-10T20:35:00Z",
+    "hasReviewed": true
+  },
+  {
+    "id": "ORD-20260912-002",
+    "customerId": "cust-2",
+    "customerName": "Anisa Putri Wijaya",
+    "customerPhone": "081987654322",
+    "customerAddress": "Jl. Veteran No. 15, Pekalongan",
+    "customerLat": -6.887,
+    "customerLng": 109.678,
+    "therapistId": "th-2",
+    "therapistName": "Siti Rahmawati",
+    "therapistPhone": "081234567892",
+    "serviceId": "srv-5",
+    "serviceName": "Pijat Ibu Hamil & Pasca Salin",
+    "durationMinutes": 60,
+    "basePrice": 120000,
+    "extraFee": null,
+    "totalPrice": 120000,
+    "status": "sesi_dimulai",
+    "scheduledDate": "2026-09-12",
+    "scheduledTime": "16:30",
+    "notes": "Ibu hamil 6 bulan, pegal di pinggul",
+    "createdAt": "2026-09-12T16:00:00Z",
+    "acceptedAt": "2026-09-12T16:05:00Z",
+    "startedAt": "2026-09-12T16:35:00Z",
+    "completedAt": null,
+    "hasReviewed": false
+  }
+],
+  reviews: [
+  {
+    "id": "rev-1",
+    "orderId": "ORD-20260910-001",
+    "customerId": "cust-1",
+    "customerName": "Dimas Arya Nugraha",
+    "therapistId": "th-1",
+    "therapistName": "Budi Santoso, S.Tr.Kes",
+    "serviceName": "Pijat Tradisional Jawa",
+    "rating": 5,
+    "comment": "Pijatan Pak Budi sangat mantap dan teliti! Rasa pegal di leher dan punggung langsung hilang. Sangat sopan dan membawa alas higienis sendiri. Pasti langganan lagi.",
+    "createdAt": "2026-09-10T20:40:00Z"
+  }
+],
+  priceHistory: [
+  {
+    "id": "ph-1",
+    "serviceId": "srv-1",
+    "serviceName": "Pijat Tradisional Jawa",
+    "oldPrice": 90000,
+    "newPrice": 100000,
+    "changedBy": "calonbikers85@gmail.com",
+    "reason": "Penyesuaian biaya bahan aromaterapi & insentif terapis",
+    "timestamp": "2026-08-01T09:00:00Z"
+  },
+  {
+    "id": "ph-2",
+    "serviceId": "srv-3",
+    "serviceName": "Deep Tissue & Sport Massage",
+    "oldPrice": 120000,
+    "newPrice": 130000,
+    "changedBy": "calonbikers85@gmail.com",
+    "reason": "Penyesuaian standar durasi dan teknik khusus",
+    "timestamp": "2026-08-15T11:20:00Z"
+  }
+],
+  messages: [
+  {
+    "id": "msg-1",
+    "orderId": "ORD-20260910-001",
+    "senderRole": "customer",
+    "senderName": "Dimas Arya",
+    "text": "Halo Pak Budi, posisi sudah sampai mana ya?",
+    "timestamp": "2026-09-10T18:50:00Z"
+  },
+  {
+    "id": "msg-2",
+    "orderId": "ORD-20260910-001",
+    "senderRole": "therapist",
+    "senderName": "Budi Santoso",
+    "text": "Halo Mas Dimas, saya sudah di lampu merah Jl. Hayam Wuruk, sekitar 5 menit lagi tiba ya.",
+    "timestamp": "2026-09-10T18:52:00Z"
+  }
+],
+  notifications: [
+  {
+    "id": "notif-1",
+    "targetRole": "customer",
+    "targetUserId": "cust-1",
+    "title": "Pesanan Selesai",
+    "message": "Sesi pijat ORD-20260910-001 telah selesai. Silakan berikan review untuk terapis Anda.",
+    "timestamp": "2026-09-10T20:35:00Z",
+    "read": false
+  },
+  {
+    "id": "notif-2",
+    "targetRole": "therapist",
+    "targetUserId": "th-2",
+    "title": "Sesi Pijat Berlangsung",
+    "message": "Pesanan Anisa Putri Wijaya sedang berjalan.",
+    "timestamp": "2026-09-12T16:35:00Z",
+    "read": true
+  }
+]
+};
+
+
+
+/* =========================================================
+   PIJATKU - Application State & LocalStorage Manager
+   ========================================================= */
+
+// Security Note:
+// AKUN ADMIN BAWAAN (calonbikers85@gmail.com / Pekalongan27)
+// Disediakan semata-mata untuk keperluan DEMO & EVALUASI prototipe.
+// Pada aplikasi produksi, otentikasi wajib menggunakan backend terenkripsi,
+// HTTPS, JWT/Session token aman, dan password hashing standar industri (Argon2/bcrypt).
+
+const STORAGE_KEYS = {
+  USERS: 'users',
+  CUSTOMERS: 'customers',
+  THERAPISTS: 'therapists',
+  SERVICES: 'services',
+  ORDERS: 'orders',
+  MESSAGES: 'messages',
+  NOTIFICATIONS: 'notifications',
+  REVIEWS: 'reviews',
+  PRICE_HISTORY: 'priceHistory',
+  ACTIVE_SESSION: 'pijatku_active_session'
+};
+
+// Default Pekalongan Coordinate Fallback
+const PEKALONGAN_COORDS = {
+  lat: -6.8886,
+  lng: 109.6753,
+  name: 'Alun-Alun Pekalongan'
+};
+
+// State Store
+const AppState = {
+  currentRole: null, // 'customer', 'therapist', 'admin'
+  currentUser: null,
+  activeOrder: null,
+  activeTab: 'home',
+  customerLocation: { ...PEKALONGAN_COORDS },
+  therapistLocation: { ...PEKALONGAN_COORDS },
+  trackingMap: null,
+  bookingMap: null,
+  adminTab: 'stats',
+  activeChatOrderId: null,
+  selectedCategory: 'Semua',
+  sessionTimerInterval: null,
+  pendingOTP: null
+};
+
+// Database Initialization
+function initDatabase() {
+  if (!localStorage.getItem(STORAGE_KEYS.SERVICES)) {
+    localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(DEFAULT_DATA.services));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.THERAPISTS)) {
+    localStorage.setItem(STORAGE_KEYS.THERAPISTS, JSON.stringify(DEFAULT_DATA.therapists));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.CUSTOMERS)) {
+    localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(DEFAULT_DATA.customers));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.ORDERS)) {
+    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(DEFAULT_DATA.orders));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.REVIEWS)) {
+    localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(DEFAULT_DATA.reviews));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.PRICE_HISTORY)) {
+    localStorage.setItem(STORAGE_KEYS.PRICE_HISTORY, JSON.stringify(DEFAULT_DATA.priceHistory));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.MESSAGES)) {
+    localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(DEFAULT_DATA.messages));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS)) {
+    localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(DEFAULT_DATA.notifications));
+  }
+  
+  // Restore session if exists
+  const savedSession = localStorage.getItem(STORAGE_KEYS.ACTIVE_SESSION);
+  if (savedSession) {
+    try {
+      const session = JSON.parse(savedSession);
+      AppState.currentRole = session.role;
+      AppState.currentUser = session.user;
+    } catch(e) {
+      localStorage.removeItem(STORAGE_KEYS.ACTIVE_SESSION);
+    }
+  } else {
+    // Default to customer Dimas for seamless initial preview
+    autoLoginDemo('customer');
+  }
+}
+
+// Data Accessors
+function getDB(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key)) || [];
+  } catch (e) {
+    console.error('Error reading localStorage key:', key, e);
+    return [];
+  }
+}
+
+function saveDB(key, data) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+    // Trigger cross-view sync event
+    window.dispatchEvent(new Event('pijatku_data_updated'));
+  } catch (e) {
+    console.error('Error saving to localStorage key:', key, e);
+  }
+}
+
+// Distance Calculation (Haversine in km)
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return 1.5;
+  const R = 6371; // Radius of earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const d = R * c;
+  return Math.round(d * 10) / 10; // 1 decimal place
+}
+
+// Sound Synthesizer for notifications
+function playChime(type = 'normal') {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    if (type === 'incoming') {
+      // Ringtone chime
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15); // A5
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.4);
+    } else {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+      osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    }
+  } catch(e) {}
+}
+
+// Toast Notifications
+function showToast(message, type = 'info', title = '') {
+  playChime(type === 'alert' ? 'incoming' : 'normal');
+  const toastContainer = document.getElementById('toast-container');
+  if (!toastContainer) return;
+  
+  const toast = document.createElement('div');
+  const bgClass = type === 'success' ? 'bg-emerald-600 text-white' : 
+                  type === 'alert' ? 'bg-amber-600 text-white' :
+                  type === 'error' ? 'bg-rose-600 text-white' : 'bg-gray-900 text-white';
+  
+  toast.className = `transform transition-all duration-300 ease-out translate-y-2 opacity-0 p-4 rounded-xl shadow-xl flex items-start space-x-3 mb-2 ${bgClass} text-sm max-w-sm w-full`;
+  
+  const icon = type === 'success' ? 'fa-circle-check' :
+               type === 'alert' ? 'fa-bell' :
+               type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info';
+               
+  toast.innerHTML = `
+    <i class="fa-solid ${icon} text-lg mt-0.5"></i>
+    <div class="flex-1">
+      ${title ? `<div class="font-bold text-xs uppercase tracking-wider mb-0.5">${escapeHtml(title)}</div>` : ''}
+      <div class="leading-snug">${escapeHtml(message)}</div>
+    </div>
+    <button onclick="this.parentElement.remove()" class="text-white/80 hover:text-white p-1">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  `;
+  
+  toastContainer.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.remove('translate-y-2', 'opacity-0');
+  }, 20);
+  
+  setTimeout(() => {
+    if (toast.parentElement) {
+      toast.classList.add('opacity-0', 'translate-y-2');
+      setTimeout(() => toast.remove(), 300);
+    }
+  }, 4500);
+}
+
+// Text Sanitization to prevent XSS
+function escapeHtml(str) {
+  if (typeof str !== 'string') return str || '';
+  return str.replace(/[&<>'"]/g, 
+    tag => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&#39;',
+      '"': '&quot;'
+    }[tag] || tag)
+  );
+}
+
+function formatRupiah(num) {
+  return 'Rp ' + Number(num || 0).toLocaleString('id-ID');
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + ' ' +
+         d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+}
+
+// Save Notification in LocalStorage
+function addNotification(targetRole, targetUserId, title, message) {
+  const notifs = getDB(STORAGE_KEYS.NOTIFICATIONS);
+  const newNotif = {
+    id: 'notif-' + Date.now(),
+    targetRole,
+    targetUserId,
+    title,
+    message,
+    timestamp: new Date().toISOString(),
+    read: false
+  };
+  notifs.unshift(newNotif);
+  saveDB(STORAGE_KEYS.NOTIFICATIONS, notifs);
+  
+  if (AppState.currentRole === targetRole) {
+    showToast(message, 'alert', title);
+  }
+}
+
+
+
+/* =========================================================
+   AUTH & CUSTOMER MODULE
+   ========================================================= */
+
+// Quick Demo Login Switcher
+function autoLoginDemo(role) {
+  if (role === 'customer') {
+    const customers = getDB(STORAGE_KEYS.CUSTOMERS);
+    const user = customers[0] || {
+      id: 'cust-1',
+      name: 'Dimas Arya Nugraha',
+      phone: '081987654321',
+      email: 'dimas.arya@gmail.com',
+      address: 'Perumahan Griya Tirto Indah Blok C No. 4, Pekalongan',
+      lat: -6.8895,
+      lng: 109.6745
+    };
+    AppState.currentRole = 'customer';
+    AppState.currentUser = user;
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_SESSION, JSON.stringify({ role: 'customer', user }));
+    showToast('Masuk sebagai Pelanggan: ' + user.name, 'success');
+  } else if (role === 'therapist') {
+    const therapists = getDB(STORAGE_KEYS.THERAPISTS);
+    const user = therapists.find(t => t.id === 'th-1') || therapists[0];
+    AppState.currentRole = 'therapist';
+    AppState.currentUser = user;
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_SESSION, JSON.stringify({ role: 'therapist', user }));
+    showToast('Masuk sebagai Terapis: ' + user.name, 'success');
+  } else if (role === 'admin') {
+    const adminUser = {
+      email: 'calonbikers85@gmail.com',
+      role: 'admin',
+      name: 'Super Admin Pijatku'
+    };
+    AppState.currentRole = 'admin';
+    AppState.currentUser = adminUser;
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_SESSION, JSON.stringify({ role: 'admin', user: adminUser }));
+    showToast('Masuk sebagai Administrator Pijatku', 'success');
+  }
+  renderApp();
+}
+
+function logout() {
+  AppState.currentRole = null;
+  AppState.currentUser = null;
+  localStorage.removeItem(STORAGE_KEYS.ACTIVE_SESSION);
+  showToast('Anda telah keluar.', 'info');
+  renderApp();
+}
+
+function resetAllData() {
+  if (confirm('Reset seluruh database LocalStorage ke data awal demo?')) {
+    localStorage.clear();
+    initDatabase();
+    autoLoginDemo('customer');
+    showToast('Seluruh data berhasil di-reset ke data bawaan.', 'success');
+  }
+}
+
+// GPS Detection with graceful fallback
+function requestGPS(callback) {
+  if ('geolocation' in navigator) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        };
+        callback(coords, null);
+      },
+      (err) => {
+        console.warn('Geolocation failed or denied, using Pekalongan fallback:', err.message);
+        callback({ ...PEKALONGAN_COORDS }, 'GPS tidak aktif atau izin ditolak. Menggunakan titik demo Pekalongan.');
+      },
+      { timeout: 8000, enableHighAccuracy: true }
+    );
+  } else {
+    callback({ ...PEKALONGAN_COORDS }, 'Perangkat tidak mendukung Geolocation API. Menggunakan titik Pekalongan.');
+  }
+}
+
+// Customer Registration & OTP Simulation
+function handleCustomerRegister(event) {
+  event.preventDefault();
+  const form = event.target;
+  const name = form.name.value.trim();
+  const email = form.email.value.trim();
+  const phone = form.phone.value.trim();
+  const password = form.password.value;
+  const address = form.address.value.trim();
+  
+  if (!name || !email || !phone || !password || !address) {
+    showToast('Harap lengkapi semua kolom pendaftaran.', 'error');
+    return;
+  }
+  
+  // Validate existing customer
+  const customers = getDB(STORAGE_KEYS.CUSTOMERS);
+  if (customers.some(c => c.email.toLowerCase() === email.toLowerCase() || c.phone === phone)) {
+    showToast('Email atau nomor HP sudah terdaftar. Silakan login.', 'error');
+    return;
+  }
+  
+  // Generate 6 digit OTP
+  const simulatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  AppState.pendingRegistration = {
+    role: 'customer',
+    data: {
+      id: 'cust-' + Date.now(),
+      name,
+      email,
+      phone,
+      password,
+      address,
+      lat: AppState.customerLocation.lat || PEKALONGAN_COORDS.lat,
+      lng: AppState.customerLocation.lng || PEKALONGAN_COORDS.lng,
+      isVerified: false,
+      createdAt: new Date().toISOString()
+    },
+    otp: simulatedOTP
+  };
+  
+  openOTPModal(phone, simulatedOTP);
+}
+
+function openOTPModal(phone, otp) {
+  const modal = document.getElementById('otp-modal');
+  document.getElementById('otp-phone-display').innerText = phone;
+  document.getElementById('otp-code-hint').innerText = otp;
+  document.getElementById('otp-input').value = '';
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  showToast(`Kode OTP simulasi: ${otp}`, 'alert', 'SIMULASI SMS');
+}
+
+function verifyOTP() {
+  const enteredOTP = document.getElementById('otp-input').value.trim();
+  if (!AppState.pendingRegistration) {
+    showToast('Tidak ada pendaftaran tertunda.', 'error');
+    return;
+  }
+  
+  if (enteredOTP === AppState.pendingRegistration.otp) {
+    const customers = getDB(STORAGE_KEYS.CUSTOMERS);
+    const newCust = AppState.pendingRegistration.data;
+    newCust.isVerified = true;
+    customers.push(newCust);
+    saveDB(STORAGE_KEYS.CUSTOMERS, customers);
+    
+    // Auto login
+    AppState.currentRole = 'customer';
+    AppState.currentUser = newCust;
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_SESSION, JSON.stringify({ role: 'customer', user: newCust }));
+    
+    closeModal('otp-modal');
+    AppState.pendingRegistration = null;
+    showToast('Pendaftaran & verifikasi berhasil! Selamat datang di PIJATKU.', 'success');
+    renderApp();
+  } else {
+    showToast('Kode OTP salah. Periksa kembali kode di kotak simulasi.', 'error');
+  }
+}
+
+// Therapist Registration
+function handleTherapistRegister(event) {
+  event.preventDefault();
+  const form = event.target;
+  const name = form.name.value.trim();
+  const email = form.email.value.trim();
+  const phone = form.phone.value.trim();
+  const password = form.password.value;
+  const gender = form.gender.value;
+  const experienceYears = parseInt(form.experience.value, 10) || 1;
+  const address = form.address.value.trim();
+  const photo = form.photo.value.trim() || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80';
+  const bio = form.bio.value.trim();
+  
+  // Specialties checkboxes
+  const checkboxes = form.querySelectorAll('input[name="specialties"]:checked');
+  const specialties = Array.from(checkboxes).map(cb => cb.value);
+  
+  if (!name || !email || !phone || !password || !address || specialties.length === 0) {
+    showToast('Lengkapi nama, email, HP, password, keahlian, dan alamat.', 'error');
+    return;
+  }
+  
+  const therapists = getDB(STORAGE_KEYS.THERAPISTS);
+  if (therapists.some(t => t.email.toLowerCase() === email.toLowerCase() || t.phone === phone)) {
+    showToast('Email atau nomor HP terapis sudah terdaftar.', 'error');
+    return;
+  }
+  
+  const newTherapist = {
+    id: 'th-' + Date.now(),
+    name,
+    email,
+    phone,
+    password,
+    role: 'therapist',
+    gender,
+    specialties,
+    experienceYears,
+    rating: 5.0,
+    reviewCount: 0,
+    status: 'pending', // Menunggu persetujuan Admin
+    isActive: true,
+    isOnline: false,
+    photo,
+    address,
+    bio: bio || 'Terapis profesional bersertifikat.',
+    lat: AppState.therapistLocation.lat || PEKALONGAN_COORDS.lat,
+    lng: AppState.therapistLocation.lng || PEKALONGAN_COORDS.lng
+  };
+  
+  therapists.push(newTherapist);
+  saveDB(STORAGE_KEYS.THERAPISTS, therapists);
+  
+  addNotification('admin', 'admin', 'Terapis Baru Mendaftar', `${name} mendaftar sebagai terapis dan membutuhkan verifikasi persetujuan.`);
+  
+  showToast('Pendaftaran terapis berhasil! Akun Anda sedang menunggu verifikasi Admin.', 'success');
+  
+  // Switch to therapist login
+  switchAuthTab('therapist');
+}
+
+// Login Handler
+function handleLogin(event, role) {
+  event.preventDefault();
+  const form = event.target;
+  const identifier = form.identifier.value.trim();
+  const password = form.password.value;
+  
+  if (role === 'admin') {
+    // Exact Admin credentials required
+    if (identifier === 'calonbikers85@gmail.com' && password === 'Pekalongan27') {
+      const adminUser = { email: identifier, role: 'admin', name: 'Super Admin Pijatku' };
+      AppState.currentRole = 'admin';
+      AppState.currentUser = adminUser;
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_SESSION, JSON.stringify({ role: 'admin', user: adminUser }));
+      showToast('Login Admin berhasil. Selamat datang!', 'success');
+      renderApp();
+    } else {
+      showToast('Email atau Password Admin salah! Periksa data akun khusus.', 'error');
+    }
+    return;
+  }
+  
+  if (role === 'therapist') {
+    const therapists = getDB(STORAGE_KEYS.THERAPISTS);
+    const th = therapists.find(t => (t.email.toLowerCase() === identifier.toLowerCase() || t.phone === identifier) && t.password === password);
+    if (th) {
+      if (th.status === 'pending') {
+        showToast('Akun Anda masih dalam status MENUNGGU PERSETUJUAN Admin. Hubungi admin atau tunggu verifikasi.', 'alert', 'MENUNGGU VERIFIKASI');
+        return;
+      }
+      if (th.status === 'rejected') {
+        showToast('Maaf, permohonan akun terapis Anda ditolak oleh Admin.', 'error', 'AKUN DITOLAK');
+        return;
+      }
+      if (!th.isActive) {
+        showToast('Akun terapis Anda dinonaktifkan sementara oleh Admin.', 'error', 'AKUN DINONAKTIFKAN');
+        return;
+      }
+      
+      AppState.currentRole = 'therapist';
+      AppState.currentUser = th;
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_SESSION, JSON.stringify({ role: 'therapist', user: th }));
+      showToast('Selamat datang kembali, Terapis ' + th.name, 'success');
+      renderApp();
+    } else {
+      showToast('Kombinasi email/HP dan password terapis tidak ditemukan.', 'error');
+    }
+    return;
+  }
+  
+  if (role === 'customer') {
+    const customers = getDB(STORAGE_KEYS.CUSTOMERS);
+    const cust = customers.find(c => (c.email.toLowerCase() === identifier.toLowerCase() || c.phone === identifier) && c.password === password);
+    if (cust) {
+      AppState.currentRole = 'customer';
+      AppState.currentUser = cust;
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_SESSION, JSON.stringify({ role: 'customer', user: cust }));
+      showToast('Login berhasil. Selamat datang, ' + cust.name, 'success');
+      renderApp();
+    } else {
+      showToast('Email/HP atau password pelanggan tidak cocok.', 'error');
+    }
+  }
+}
+
+
+
+/* =========================================================
+   CUSTOMER ORDERING, TRACKING & INTERACTIVE MAP MODULE
+   ========================================================= */
+
+let bookingSelectedService = null;
+let bookingSelectedDuration = 60;
+let bookingSelectedTherapistId = 'auto';
+let bookingMarker = null;
+
+function openBookingModal(serviceId) {
+  const services = getDB(STORAGE_KEYS.SERVICES);
+  const service = services.find(s => s.id === serviceId) || services[0];
+  if (!service) return;
+  
+  bookingSelectedService = service;
+  bookingSelectedDuration = service.durations[0]?.minutes || 60;
+  bookingSelectedTherapistId = 'auto';
+  
+  const modal = document.getElementById('booking-modal');
+  document.getElementById('booking-service-name').innerText = service.name;
+  document.getElementById('booking-service-desc').innerText = service.tagline || service.description;
+  
+  // Date & Time defaults
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('booking-date').value = today;
+  
+  const now = new Date();
+  now.setMinutes(now.getMinutes() + 30);
+  const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  document.getElementById('booking-time').value = timeStr;
+  
+  // Render Duration Tabs
+  const durationContainer = document.getElementById('booking-durations');
+  durationContainer.innerHTML = service.durations.map((d, idx) => `
+    <button type="button" onclick="selectBookingDuration(${d.minutes})" 
+      id="duration-btn-${d.minutes}"
+      class="duration-btn flex-1 py-2.5 px-3 rounded-xl border text-sm font-semibold transition-all ${d.minutes === bookingSelectedDuration ? 'border-emerald-600 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500' : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-200'}">
+      ${d.minutes} Menit
+      <div class="text-xs font-normal text-gray-500 mt-0.5">${formatRupiah(d.price)}</div>
+    </button>
+  `).join('');
+  
+  // Render Therapist selection list
+  renderBookingTherapistList();
+  
+  // Customer address
+  const customer = AppState.currentUser || {};
+  document.getElementById('booking-address').value = customer.address || 'Pekalongan, Jawa Tengah';
+  document.getElementById('booking-notes').value = '';
+  
+  updateBookingPrice();
+  
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  
+  // Init Leaflet map for location picker
+  setTimeout(() => {
+    initBookingMap(customer.lat || PEKALONGAN_COORDS.lat, customer.lng || PEKALONGAN_COORDS.lng);
+  }, 200);
+}
+
+function selectBookingDuration(minutes) {
+  bookingSelectedDuration = minutes;
+  document.querySelectorAll('.duration-btn').forEach(btn => {
+    btn.classList.remove('border-emerald-600', 'bg-emerald-50', 'text-emerald-800', 'ring-2', 'ring-emerald-500');
+    btn.classList.add('border-gray-200', 'bg-white', 'text-gray-700');
+  });
+  const activeBtn = document.getElementById('duration-btn-' + minutes);
+  if (activeBtn) {
+    activeBtn.classList.remove('border-gray-200', 'bg-white', 'text-gray-700');
+    activeBtn.classList.add('border-emerald-600', 'bg-emerald-50', 'text-emerald-800', 'ring-2', 'ring-emerald-500');
+  }
+  updateBookingPrice();
+}
+
+function updateBookingPrice() {
+  if (!bookingSelectedService) return;
+  const durationObj = bookingSelectedService.durations.find(d => d.minutes === bookingSelectedDuration) || bookingSelectedService.durations[0];
+  const price = durationObj ? durationObj.price : bookingSelectedService.basePrice;
+  document.getElementById('booking-total-price').innerText = formatRupiah(price);
+}
+
+function renderBookingTherapistList() {
+  const therapists = getDB(STORAGE_KEYS.THERAPISTS).filter(t => t.status === 'approved' && t.isActive);
+  const container = document.getElementById('booking-therapists-list');
+  const custLat = AppState.currentUser?.lat || PEKALONGAN_COORDS.lat;
+  const custLng = AppState.currentUser?.lng || PEKALONGAN_COORDS.lng;
+  
+  let html = `
+    <div onclick="selectBookingTherapist('auto')" id="th-opt-auto" class="cursor-pointer p-3 rounded-xl border flex items-center justify-between ${bookingSelectedTherapistId === 'auto' ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500' : 'border-gray-200 bg-white hover:border-emerald-300'}">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+        </div>
+        <div>
+          <div class="font-bold text-sm">Pilihkan Terapis Terdekat Otomatis</div>
+          <div class="text-xs text-gray-500">Sistem akan memprioritaskan terapis online terdekat dengan Anda</div>
+        </div>
+      </div>
+      <i class="fa-solid fa-circle-check ${bookingSelectedTherapistId === 'auto' ? 'text-emerald-600 text-lg' : 'text-gray-300'}"></i>
+    </div>
+  `;
+  
+  therapists.forEach(t => {
+    const dist = calculateDistance(custLat, custLng, t.lat, t.lng);
+    const isSelected = bookingSelectedTherapistId === t.id;
+    html += `
+      <div onclick="selectBookingTherapist('${t.id}')" id="th-opt-${t.id}" class="cursor-pointer p-3 rounded-xl border flex items-center justify-between mt-2 ${isSelected ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500' : 'border-gray-200 bg-white hover:border-emerald-300'}">
+        <div class="flex items-center space-x-3">
+          <div class="relative">
+            <img src="${escapeHtml(t.photo)}" alt="${escapeHtml(t.name)}" class="w-10 h-10 rounded-full object-cover border">
+            <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${t.isOnline ? 'bg-emerald-500' : 'bg-gray-400'}"></span>
+          </div>
+          <div>
+            <div class="font-bold text-sm flex items-center gap-1.5">
+              ${escapeHtml(t.name)}
+              <span class="text-xs font-normal text-amber-600 flex items-center"><i class="fa-solid fa-star text-[10px] mr-0.5"></i>${t.rating || 5.0}</span>
+            </div>
+            <div class="text-xs text-gray-500 flex items-center gap-2">
+              <span><i class="fa-solid fa-location-dot text-emerald-600 mr-1"></i>${dist} km</span>
+              <span>•</span>
+              <span class="${t.isOnline ? 'text-emerald-600 font-medium' : 'text-gray-400'}">${t.isOnline ? 'Online Siap Melayani' : 'Offline'}</span>
+            </div>
+          </div>
+        </div>
+        <i class="fa-solid fa-circle-check ${isSelected ? 'text-emerald-600 text-lg' : 'text-gray-300'}"></i>
+      </div>
+    `;
+  });
+  
+  container.innerHTML = html;
+}
+
+function selectBookingTherapist(thId) {
+  bookingSelectedTherapistId = thId;
+  renderBookingTherapistList();
+}
+
+function initBookingMap(lat, lng) {
+  const mapContainer = document.getElementById('booking-leaflet-map');
+  if (!mapContainer) return;
+  
+  if (AppState.bookingMap) {
+    AppState.bookingMap.remove();
+    AppState.bookingMap = null;
+  }
+  
+  AppState.bookingMap = L.map('booking-leaflet-map').setView([lat, lng], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap'
+  }).addTo(AppState.bookingMap);
+  
+  bookingMarker = L.marker([lat, lng], { draggable: true }).addTo(AppState.bookingMap);
+  bookingMarker.bindPopup('<b>Lokasi Penjemputan / Rumah Anda</b><br>Geser pin untuk ubah titik.').openPopup();
+  
+  bookingMarker.on('dragend', function(e) {
+    const position = bookingMarker.getLatLng();
+    AppState.customerLocation.lat = position.lat;
+    AppState.customerLocation.lng = position.lng;
+    document.getElementById('booking-address').value = `Titik Pin Peta (Lat: ${position.lat.toFixed(4)}, Lng: ${position.lng.toFixed(4)})`;
+    renderBookingTherapistList();
+  });
+  
+  AppState.bookingMap.on('click', function(e) {
+    bookingMarker.setLatLng(e.latlng);
+    AppState.customerLocation.lat = e.latlng.lat;
+    AppState.customerLocation.lng = e.latlng.lng;
+    document.getElementById('booking-address').value = `Titik Pin Peta (Lat: ${e.latlng.lat.toFixed(4)}, Lng: ${e.latlng.lng.toFixed(4)})`;
+    renderBookingTherapistList();
+  });
+}
+
+// Confirm and Submit Order
+function confirmBookingOrder() {
+  if (!bookingSelectedService) return;
+  const customer = AppState.currentUser;
+  if (!customer) {
+    showToast('Silakan login terlebih dahulu untuk memesan terapis.', 'error');
+    return;
+  }
+  
+  const date = document.getElementById('booking-date').value;
+  const time = document.getElementById('booking-time').value;
+  const address = document.getElementById('booking-address').value.trim();
+  const notes = document.getElementById('booking-notes').value.trim();
+  
+  if (!date || !time || !address) {
+    showToast('Harap lengkapi tanggal, jam, dan alamat layanan.', 'error');
+    return;
+  }
+  
+  const durationObj = bookingSelectedService.durations.find(d => d.minutes === bookingSelectedDuration) || bookingSelectedService.durations[0];
+  const price = durationObj ? durationObj.price : bookingSelectedService.basePrice;
+  
+  // Find appropriate therapist
+  const therapists = getDB(STORAGE_KEYS.THERAPISTS).filter(t => t.status === 'approved' && t.isActive);
+  let assignedTherapist = null;
+  
+  if (bookingSelectedTherapistId !== 'auto') {
+    assignedTherapist = therapists.find(t => t.id === bookingSelectedTherapistId);
+  }
+  
+  if (!assignedTherapist) {
+    // Pick nearest online therapist
+    const onlineTherapists = therapists.filter(t => t.isOnline);
+    if (onlineTherapists.length > 0) {
+      // Sort by distance
+      onlineTherapists.sort((a, b) => {
+        const dA = calculateDistance(customer.lat, customer.lng, a.lat, a.lng);
+        const dB = calculateDistance(customer.lat, customer.lng, b.lat, b.lng);
+        return dA - dB;
+      });
+      assignedTherapist = onlineTherapists[0];
+    } else if (therapists.length > 0) {
+      assignedTherapist = therapists[0];
+    }
+  }
+  
+  const orderId = 'ORD-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + Math.floor(100 + Math.random() * 900);
+  
+  const newOrder = {
+    id: orderId,
+    customerId: customer.id,
+    customerName: customer.name,
+    customerPhone: customer.phone,
+    customerAddress: address,
+    customerLat: customer.lat || PEKALONGAN_COORDS.lat,
+    customerLng: customer.lng || PEKALONGAN_COORDS.lng,
+    therapistId: assignedTherapist ? assignedTherapist.id : null,
+    therapistName: assignedTherapist ? assignedTherapist.name : 'Mencari Terapis...',
+    therapistPhone: assignedTherapist ? assignedTherapist.phone : '-',
+    serviceId: bookingSelectedService.id,
+    serviceName: bookingSelectedService.name,
+    durationMinutes: bookingSelectedDuration,
+    basePrice: price,
+    extraFee: null,
+    totalPrice: price,
+    status: 'menunggu', // menunggu -> diterima -> menuju_lokasi -> tiba -> sesi_dimulai -> selesai
+    scheduledDate: date,
+    scheduledTime: time,
+    notes: notes || '-',
+    createdAt: new Date().toISOString(),
+    acceptedAt: null,
+    startedAt: null,
+    completedAt: null,
+    hasReviewed: false
+  };
+  
+  const orders = getDB(STORAGE_KEYS.ORDERS);
+  orders.unshift(newOrder);
+  saveDB(STORAGE_KEYS.ORDERS, orders);
+  
+  // Create notifications
+  if (assignedTherapist) {
+    addNotification('therapist', assignedTherapist.id, 'Pesanan Masuk Baru!', `Customer ${customer.name} memesan ${bookingSelectedService.name} (${bookingSelectedDuration} mnt).`);
+  }
+  addNotification('customer', customer.id, 'Pesanan Terkirim', `Pesanan Anda (${orderId}) berhasil dikirim ke terapis. Menunggu konfirmasi.`);
+  
+  closeModal('booking-modal');
+  showToast('Pesanan berhasil dibuat! Menunggu terapis menerima pesanan.', 'success');
+  
+  // Open live tracking immediately
+  openOrderTracking(orderId);
+  renderApp();
+}
+
+
+
+/* =========================================================
+   LIVE TRACKING, LEAFLET MAP, CHAT & CALL SIMULATION
+   ========================================================= */
+
+let currentTrackingOrderId = null;
+let trackingInterval = null;
+
+function openOrderTracking(orderId) {
+  currentTrackingOrderId = orderId;
+  const orders = getDB(STORAGE_KEYS.ORDERS);
+  const order = orders.find(o => o.id === orderId);
+  if (!order) {
+    showToast('Pesanan tidak ditemukan.', 'error');
+    return;
+  }
+  
+  const modal = document.getElementById('tracking-modal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  
+  renderTrackingDetails(order);
+  
+  setTimeout(() => {
+    initTrackingMap(order);
+  }, 250);
+  
+  // Polling for live status updates
+  if (trackingInterval) clearInterval(trackingInterval);
+  trackingInterval = setInterval(() => {
+    const updatedOrders = getDB(STORAGE_KEYS.ORDERS);
+    const curr = updatedOrders.find(o => o.id === currentTrackingOrderId);
+    if (curr) {
+      renderTrackingDetails(curr);
+    }
+  }, 2000);
+}
+
+function closeTrackingModal() {
+  closeModal('tracking-modal');
+  if (trackingInterval) clearInterval(trackingInterval);
+  if (AppState.trackingMap) {
+    AppState.trackingMap.remove();
+    AppState.trackingMap = null;
+  }
+}
+
+function renderTrackingDetails(order) {
+  document.getElementById('track-order-id').innerText = order.id;
+  document.getElementById('track-service-name').innerText = order.serviceName;
+  document.getElementById('track-service-duration').innerText = order.durationMinutes + ' Menit';
+  document.getElementById('track-service-price').innerText = formatRupiah(order.totalPrice);
+  document.getElementById('track-customer-address').innerText = order.customerAddress;
+  
+  // Therapist info
+  const therapists = getDB(STORAGE_KEYS.THERAPISTS);
+  const th = therapists.find(t => t.id === order.therapistId);
+  
+  const thPhoto = th ? th.photo : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';
+  const thName = th ? th.name : (order.therapistName || 'Mencari terapis...');
+  const thRating = th ? th.rating : 4.9;
+  
+  document.getElementById('track-therapist-photo').src = thPhoto;
+  document.getElementById('track-therapist-name').innerText = thName;
+  document.getElementById('track-therapist-rating').innerText = thRating;
+  
+  // Calculate distance & ETA
+  const cLat = order.customerLat || PEKALONGAN_COORDS.lat;
+  const cLng = order.customerLng || PEKALONGAN_COORDS.lng;
+  const tLat = th ? th.lat : (cLat + 0.01);
+  const tLng = th ? th.lng : (cLng + 0.01);
+  
+  const dist = calculateDistance(cLat, cLng, tLat, tLng);
+  const etaMinutes = Math.max(5, Math.round(dist * 3)); // approx 3 mins per km
+  
+  document.getElementById('track-distance-text').innerText = `${dist} km (${etaMinutes} mnt)`;
+  
+  // Stepper Visuals: menunggu -> diterima -> menuju_lokasi -> tiba -> sesi_dimulai -> selesai
+  const steps = ['menunggu', 'diterima', 'menuju_lokasi', 'tiba', 'sesi_dimulai', 'selesai'];
+  const stepIdx = steps.indexOf(order.status);
+  
+  // Update status badge
+  const statusBadge = document.getElementById('track-status-badge');
+  const statusTexts = {
+    menunggu: { text: 'Menunggu Terapis', color: 'bg-amber-100 text-amber-800' },
+    diterima: { text: 'Pesanan Diterima', color: 'bg-blue-100 text-blue-800' },
+    menuju_lokasi: { text: 'Terapis Menuju Lokasi', color: 'bg-indigo-100 text-indigo-800' },
+    tiba: { text: 'Terapis Tiba di Lokasi', color: 'bg-teal-100 text-teal-800' },
+    sesi_dimulai: { text: 'Sesi Pijat Berjalan', color: 'bg-emerald-100 text-emerald-800 animate-pulse' },
+    selesai: { text: 'Selesai', color: 'bg-gray-100 text-gray-800' },
+    dibatalkan: { text: 'Dibatalkan', color: 'bg-rose-100 text-rose-800' }
+  };
+  const currStatus = statusTexts[order.status] || { text: order.status, color: 'bg-gray-100 text-gray-800' };
+  statusBadge.className = `px-3 py-1 rounded-full text-xs font-bold ${currStatus.color}`;
+  statusBadge.innerText = currStatus.text;
+  
+  // Stepper elements
+  steps.forEach((st, idx) => {
+    const el = document.getElementById('step-dot-' + st);
+    if (!el) return;
+    if (idx <= stepIdx && order.status !== 'dibatalkan') {
+      el.classList.remove('bg-gray-200', 'text-gray-400');
+      el.classList.add('bg-emerald-600', 'text-white');
+    } else {
+      el.classList.remove('bg-emerald-600', 'text-white');
+      el.classList.add('bg-gray-200', 'text-gray-400');
+    }
+  });
+  
+  // Session Timer Display
+  const timerContainer = document.getElementById('track-timer-container');
+  if (order.status === 'sesi_dimulai') {
+    timerContainer.classList.remove('hidden');
+    updateSessionTimerUI(order);
+  } else {
+    timerContainer.classList.add('hidden');
+  }
+  
+  // Extra Fee Approval Card (Customer Action)
+  const extraFeeContainer = document.getElementById('track-extra-fee-card');
+  if (order.extraFee && order.extraFee.amount > 0) {
+    extraFeeContainer.classList.remove('hidden');
+    document.getElementById('extra-fee-amount').innerText = formatRupiah(order.extraFee.amount);
+    document.getElementById('extra-fee-reason').innerText = order.extraFee.reason;
+    
+    const actionBtns = document.getElementById('extra-fee-actions');
+    const statusText = document.getElementById('extra-fee-status');
+    
+    if (order.extraFee.status === 'pending') {
+      if (AppState.currentRole === 'customer') {
+        actionBtns.classList.remove('hidden');
+        statusText.innerText = 'Terapis mengajukan biaya tambahan. Menunggu persetujuan Anda:';
+      } else {
+        actionBtns.classList.add('hidden');
+        statusText.innerText = 'Menunggu persetujuan pelanggan.';
+      }
+    } else if (order.extraFee.status === 'approved') {
+      actionBtns.classList.add('hidden');
+      statusText.innerHTML = '<span class="text-emerald-700 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>Biaya tambahan disetujui pelanggan & ditambahkan ke tagihan.</span>';
+    } else if (order.extraFee.status === 'rejected') {
+      actionBtns.classList.add('hidden');
+      statusText.innerHTML = '<span class="text-rose-700 font-semibold"><i class="fa-solid fa-circle-xmark mr-1"></i>Biaya tambahan ditolak oleh pelanggan.</span>';
+    }
+  } else {
+    extraFeeContainer.classList.add('hidden');
+  }
+  
+  // Review prompt if completed and not yet reviewed
+  const reviewPrompt = document.getElementById('track-review-prompt');
+  if (order.status === 'selesai' && !order.hasReviewed && AppState.currentRole === 'customer') {
+    reviewPrompt.classList.remove('hidden');
+  } else {
+    reviewPrompt.classList.add('hidden');
+  }
+  
+  // Setup Chat and Call Buttons
+  const chatBtn = document.getElementById('track-chat-btn');
+  const callBtn = document.getElementById('track-call-btn');
+  const mapsBtn = document.getElementById('track-maps-btn');
+  
+  chatBtn.onclick = () => openChatModal(order.id);
+  callBtn.onclick = () => openCallModal(th ? th.name : 'Terapis', th ? th.phone : '081234567891');
+  mapsBtn.onclick = () => {
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${cLat},${cLng}`;
+    window.open(url, '_blank');
+  };
+}
+
+// Session Timer UI
+function updateSessionTimerUI(order) {
+  if (!order.startedAt) return;
+  const started = new Date(order.startedAt).getTime();
+  const totalMs = (order.durationMinutes || 60) * 60 * 1000;
+  const elapsed = Date.now() - started;
+  const remaining = Math.max(0, totalMs - elapsed);
+  
+  const mins = Math.floor(remaining / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
+  
+  const timerEl = document.getElementById('session-timer-text');
+  if (timerEl) {
+    timerEl.innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
+}
+
+// Leaflet Map Init for Order Tracking
+function initTrackingMap(order) {
+  const mapContainer = document.getElementById('tracking-leaflet-map');
+  if (!mapContainer) return;
+  
+  if (AppState.trackingMap) {
+    try {
+      AppState.trackingMap.remove();
+    } catch (e) {
+      console.warn('Map cleanup error:', e);
+    }
+    AppState.trackingMap = null;
+  }
+
+  if (typeof L === 'undefined') {
+    mapContainer.innerHTML = '<div class="h-full flex items-center justify-center text-xs text-gray-400 bg-gray-100"><i class="fa-solid fa-map mr-2"></i> Peta pelacakan koordinat Pekalongan</div>';
+    return;
+  }
+  
+  try {
+    const therapists = getDB(STORAGE_KEYS.THERAPISTS);
+    const th = therapists.find(t => t.id === order.therapistId);
+    
+    const cLat = order.customerLat || PEKALONGAN_COORDS.lat;
+    const cLng = order.customerLng || PEKALONGAN_COORDS.lng;
+    const tLat = th ? th.lat : (cLat + 0.008);
+    const tLng = th ? th.lng : (cLng + 0.008);
+    
+    AppState.trackingMap = L.map('tracking-leaflet-map').setView([cLat, cLng], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(AppState.trackingMap);
+    
+    // Custom Icons
+    const customerIcon = L.divIcon({
+      className: 'custom-map-icon',
+      html: `<div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg border-2 border-white"><i class="fa-solid fa-house text-xs"></i></div>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16]
+    });
+    
+    const therapistIcon = L.divIcon({
+      className: 'custom-map-icon',
+      html: `<div class="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-lg border-2 border-white pulse-emerald"><i class="fa-solid fa-spa text-sm"></i></div>`,
+      iconSize: [36, 36],
+      iconAnchor: [18, 18]
+    });
+    
+    const custMarker = L.marker([cLat, cLng], { icon: customerIcon }).addTo(AppState.trackingMap);
+    custMarker.bindPopup(`<b>Rumah Customer</b><br>${order.customerName}`).openPopup();
+    
+    const thMarker = L.marker([tLat, tLng], { icon: therapistIcon }).addTo(AppState.trackingMap);
+    thMarker.bindPopup(`<b>Posisi Terapis</b><br>${th ? th.name : 'Terapis'}`);
+    
+    // Draw Route Polyline
+    const routeLine = L.polyline([[tLat, tLng], [cLat, cLng]], {
+      color: '#059669',
+      weight: 4,
+      dashArray: '8, 8',
+      opacity: 0.85
+    }).addTo(AppState.trackingMap);
+    
+    // Fit bounds to show both points nicely
+    AppState.trackingMap.fitBounds([[tLat, tLng], [cLat, cLng]], { padding: [40, 40] });
+  } catch (err) {
+    console.warn('Leaflet map error caught:', err);
+    mapContainer.innerHTML = '<div class="h-full flex items-center justify-center text-xs text-gray-500 bg-gray-50 p-4 text-center">Titik penjemputan terapis & customer siap dituju di Google Maps</div>';
+  }
+}
+
+// Extra Fee Customer Decision
+function respondExtraFee(decision) {
+  if (!currentTrackingOrderId) return;
+  const orders = getDB(STORAGE_KEYS.ORDERS);
+  const order = orders.find(o => o.id === currentTrackingOrderId);
+  if (!order || !order.extraFee) return;
+  
+  if (decision === 'approve') {
+    order.extraFee.status = 'approved';
+    order.totalPrice = (order.basePrice || 0) + (order.extraFee.amount || 0);
+    showToast('Biaya tambahan berhasil disetujui.', 'success');
+    addNotification('therapist', order.therapistId, 'Biaya Tambahan Disetujui', `Customer telah menyetujui biaya tambahan Rp ${order.extraFee.amount.toLocaleString('id-ID')}.`);
+  } else {
+    order.extraFee.status = 'rejected';
+    showToast('Biaya tambahan ditolak.', 'info');
+    addNotification('therapist', order.therapistId, 'Biaya Tambahan Ditolak', 'Customer menolak pengajuan biaya tambahan.');
+  }
+  
+  saveDB(STORAGE_KEYS.ORDERS, orders);
+  renderTrackingDetails(order);
+  renderApp();
+}
+
+// Rating & Review Modal
+function openReviewModal(orderId) {
+  const modal = document.getElementById('review-modal');
+  document.getElementById('review-order-id').value = orderId;
+  document.getElementById('review-comment').value = '';
+  setStarRating(5);
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+let currentSelectedRating = 5;
+function setStarRating(rating) {
+  currentSelectedRating = rating;
+  for (let i = 1; i <= 5; i++) {
+    const star = document.getElementById('star-' + i);
+    if (!star) continue;
+    if (i <= rating) {
+      star.className = 'fa-solid fa-star text-2xl text-amber-400 cursor-pointer transition-transform hover:scale-110';
+    } else {
+      star.className = 'fa-regular fa-star text-2xl text-gray-300 cursor-pointer transition-transform hover:scale-110';
+    }
+  }
+}
+
+function submitReview() {
+  const orderId = document.getElementById('review-order-id').value || currentTrackingOrderId;
+  const comment = document.getElementById('review-comment').value.trim();
+  
+  if (!comment) {
+    showToast('Silakan tulis ulasan/kesan Anda mengenai layanan terapis.', 'error');
+    return;
+  }
+  
+  const orders = getDB(STORAGE_KEYS.ORDERS);
+  const order = orders.find(o => o.id === orderId);
+  if (!order) return;
+  
+  const reviews = getDB(STORAGE_KEYS.REVIEWS);
+  const newReview = {
+    id: 'rev-' + Date.now(),
+    orderId: order.id,
+    customerId: order.customerId,
+    customerName: order.customerName,
+    therapistId: order.therapistId,
+    therapistName: order.therapistName,
+    serviceName: order.serviceName,
+    rating: currentSelectedRating,
+    comment,
+    createdAt: new Date().toISOString()
+  };
+  
+  reviews.unshift(newReview);
+  saveDB(STORAGE_KEYS.REVIEWS, reviews);
+  
+  // Update Therapist Rating
+  const therapists = getDB(STORAGE_KEYS.THERAPISTS);
+  const th = therapists.find(t => t.id === order.therapistId);
+  if (th) {
+    const thReviews = reviews.filter(r => r.therapistId === th.id);
+    const avg = thReviews.reduce((sum, r) => sum + r.rating, 0) / thReviews.length;
+    th.rating = Math.round(avg * 10) / 10;
+    th.reviewCount = thReviews.length;
+    saveDB(STORAGE_KEYS.THERAPISTS, therapists);
+  }
+  
+  order.hasReviewed = true;
+  saveDB(STORAGE_KEYS.ORDERS, orders);
+  
+  addNotification('therapist', order.therapistId, 'Review Baru Diterima', `Customer ${order.customerName} memberikan rating ${currentSelectedRating} bintang.`);
+  
+  closeModal('review-modal');
+  showToast('Terima kasih atas ulasan dan rating Anda!', 'success');
+  renderApp();
+  if (currentTrackingOrderId === orderId) {
+    renderTrackingDetails(order);
+  }
+}
+
+// Chat Modal & Realtime Simulation
+function openChatModal(orderId) {
+  AppState.activeChatOrderId = orderId;
+  const orders = getDB(STORAGE_KEYS.ORDERS);
+  const order = orders.find(o => o.id === orderId);
+  if (!order) return;
+  
+  const modal = document.getElementById('chat-modal');
+  const isCustomer = AppState.currentRole === 'customer';
+  const partnerName = isCustomer ? order.therapistName : order.customerName;
+  document.getElementById('chat-partner-name').innerText = partnerName || 'Kontak Pesanan';
+  document.getElementById('chat-order-tag').innerText = order.id;
+  
+  renderChatMessages();
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function renderChatMessages() {
+  if (!AppState.activeChatOrderId) return;
+  const messages = getDB(STORAGE_KEYS.MESSAGES).filter(m => m.orderId === AppState.activeChatOrderId);
+  const container = document.getElementById('chat-messages-container');
+  if (!container) return;
+  
+  if (messages.length === 0) {
+    container.innerHTML = `
+      <div class="text-center text-gray-400 text-xs py-8">
+        <i class="fa-regular fa-comments text-2xl mb-2 block"></i>
+        Belum ada obrolan. Mulai percakapan dengan terapis/pelanggan Anda.
+      </div>
+    `;
+    return;
+  }
+  
+  const currentRole = AppState.currentRole;
+  container.innerHTML = messages.map(m => {
+    const isMe = m.senderRole === currentRole;
+    return `
+      <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-3">
+        <div class="text-[10px] text-gray-400 mb-1 px-1">${escapeHtml(m.senderName)} • ${formatDate(m.timestamp).split(' ')[3] || ''}</div>
+        <div class="p-3 rounded-2xl max-w-[80%] text-sm shadow-sm ${isMe ? 'chat-bubble-user' : 'chat-bubble-peer'}">
+          ${escapeHtml(m.text)}
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  container.scrollTop = container.scrollHeight;
+}
+
+function sendChatMessage(textOverride) {
+  const input = document.getElementById('chat-input');
+  const text = (textOverride || input.value).trim();
+  if (!text || !AppState.activeChatOrderId) return;
+  
+  const orders = getDB(STORAGE_KEYS.ORDERS);
+  const order = orders.find(o => o.id === AppState.activeChatOrderId);
+  if (!order) return;
+  
+  const senderRole = AppState.currentRole;
+  const senderName = AppState.currentUser ? AppState.currentUser.name : (senderRole === 'customer' ? 'Customer' : 'Terapis');
+  
+  const messages = getDB(STORAGE_KEYS.MESSAGES);
+  const newMsg = {
+    id: 'msg-' + Date.now(),
+    orderId: order.id,
+    senderRole,
+    senderName,
+    text,
+    timestamp: new Date().toISOString()
+  };
+  
+  messages.push(newMsg);
+  saveDB(STORAGE_KEYS.MESSAGES, messages);
+  if (!textOverride) input.value = '';
+  
+  renderChatMessages();
+  
+  // Notification to partner
+  const targetRole = senderRole === 'customer' ? 'therapist' : 'customer';
+  const targetUserId = senderRole === 'customer' ? order.therapistId : order.customerId;
+  addNotification(targetRole, targetUserId, 'Pesan Baru', `${senderName}: ${text.slice(0, 35)}...`);
+}
+
+// Call Simulation Modal
+let callTimerInterval = null;
+let callDurationSec = 0;
+
+function openCallModal(name, phone) {
+  const modal = document.getElementById('call-modal');
+  document.getElementById('call-contact-name').innerText = name;
+  document.getElementById('call-contact-phone').innerText = phone;
+  document.getElementById('call-status-text').innerText = 'Memanggil...';
+  document.getElementById('call-timer').innerText = '00:00';
+  document.getElementById('call-timer').classList.add('hidden');
+  
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  
+  playChime('incoming');
+  
+  // Connect after 2.5 seconds
+  setTimeout(() => {
+    document.getElementById('call-status-text').innerText = 'Terhubung';
+    document.getElementById('call-timer').classList.remove('hidden');
+    callDurationSec = 0;
+    if (callTimerInterval) clearInterval(callTimerInterval);
+    callTimerInterval = setInterval(() => {
+      callDurationSec++;
+      const m = Math.floor(callDurationSec / 60);
+      const s = callDurationSec % 60;
+      document.getElementById('call-timer').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }, 1000);
+  }, 2500);
+}
+
+function endCall() {
+  if (callTimerInterval) clearInterval(callTimerInterval);
+  closeModal('call-modal');
+  showToast('Panggilan berakhir.', 'info');
+}
+
+function launchWhatsApp(phone) {
+  const cleanPhone = (phone || '').replace(/[^0-9]/g, '');
+  const waNumber = cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone;
+  window.open(`https://wa.me/${waNumber}`, '_blank');
+}
+
+
+
+/* =========================================================
+   THERAPIST WORKFLOW & ADMIN CONTROL PANEL MODULE
+   ========================================================= */
+
+// Therapist Online / Offline Toggle
+function toggleTherapistOnlineStatus() {
+  if (AppState.currentRole !== 'therapist' || !AppState.currentUser) return;
+  const therapists = getDB(STORAGE_KEYS.THERAPISTS);
+  const th = therapists.find(t => t.id === AppState.currentUser.id);
+  if (!th) return;
+  
+  th.isOnline = !th.isOnline;
+  AppState.currentUser.isOnline = th.isOnline;
+  saveDB(STORAGE_KEYS.THERAPISTS, therapists);
+  localStorage.setItem(STORAGE_KEYS.ACTIVE_SESSION, JSON.stringify({ role: 'therapist', user: th }));
+  
+  showToast(th.isOnline ? 'Status Anda sekarang ONLINE. Siap menerima pesanan.' : 'Status Anda sekarang OFFLINE.', th.isOnline ? 'success' : 'info');
+  renderApp();
+}
+
+// Therapist Job Status Progression
+function updateJobStatus(orderId, nextStatus) {
+  const orders = getDB(STORAGE_KEYS.ORDERS);
+  const order = orders.find(o => o.id === orderId);
+  if (!order) return;
+  
+  order.status = nextStatus;
+  const now = new Date().toISOString();
+  
+  if (nextStatus === 'diterima') {
+    order.acceptedAt = now;
+    addNotification('customer', order.customerId, 'Pesanan Diterima!', `Terapis ${order.therapistName} telah menerima pesanan Anda.`);
+    showToast('Pesanan berhasil diterima. Silakan segera menuju lokasi pelanggan.', 'success');
+  } else if (nextStatus === 'menuju_lokasi') {
+    addNotification('customer', order.customerId, 'Terapis Menuju Lokasi', `Terapis ${order.therapistName} sedang dalam perjalanan menuju rumah Anda.`);
+    showToast('Status diperbarui: Menuju lokasi pelanggan.', 'info');
+  } else if (nextStatus === 'tiba') {
+    addNotification('customer', order.customerId, 'Terapis Telah Tiba', `Terapis ${order.therapistName} telah sampai di depan lokasi Anda.`);
+    showToast('Status diperbarui: Tiba di lokasi.', 'success');
+  } else if (nextStatus === 'sesi_dimulai') {
+    order.startedAt = now;
+    addNotification('customer', order.customerId, 'Sesi Pijat Dimulai', `Sesi pijat (${order.durationMinutes} menit) telah resmi dimulai. Selamat menikmati relaksasi.`);
+    showToast('Sesi pijat dimulai! Timer telah berjalan.', 'success');
+  } else if (nextStatus === 'selesai') {
+    order.completedAt = now;
+    addNotification('customer', order.customerId, 'Sesi Pijat Selesai', 'Sesi pijat telah selesai. Mohon luangkan waktu untuk memberikan ulasan dan rating.');
+    showToast('Sesi pekerjaan selesai! Terima kasih atas dedikasi Anda.', 'success');
+  }
+  
+  saveDB(STORAGE_KEYS.ORDERS, orders);
+  renderApp();
+  if (currentTrackingOrderId === orderId) {
+    renderTrackingDetails(order);
+  }
+}
+
+// Therapist Incoming Order Modal
+let incomingOrderId = null;
+function checkTherapistIncomingOrders() {
+  if (AppState.currentRole !== 'therapist' || !AppState.currentUser) return;
+  if (!AppState.currentUser.isOnline) return;
+  
+  const orders = getDB(STORAGE_KEYS.ORDERS);
+  // Find order assigned to this therapist or unassigned with status 'menunggu'
+  const pendingOrder = orders.find(o => o.status === 'menunggu' && (o.therapistId === AppState.currentUser.id || !o.therapistId));
+  
+  const modal = document.getElementById('incoming-order-modal');
+  if (pendingOrder && (!modal || modal.classList.contains('hidden'))) {
+    incomingOrderId = pendingOrder.id;
+    openIncomingOrderPopup(pendingOrder);
+  }
+}
+
+function openIncomingOrderPopup(order) {
+  incomingOrderId = order.id;
+  const modal = document.getElementById('incoming-order-modal');
+  document.getElementById('incoming-customer-name').innerText = order.customerName;
+  document.getElementById('incoming-customer-address').innerText = order.customerAddress;
+  document.getElementById('incoming-service-name').innerText = order.serviceName;
+  document.getElementById('incoming-service-duration').innerText = order.durationMinutes + ' Menit';
+  document.getElementById('incoming-service-price').innerText = formatRupiah(order.totalPrice);
+  document.getElementById('incoming-notes').innerText = order.notes || 'Tidak ada catatan khusus';
+  
+  const dist = calculateDistance(order.customerLat, order.customerLng, AppState.currentUser.lat, AppState.currentUser.lng);
+  document.getElementById('incoming-distance').innerText = dist + ' km';
+  
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  playChime('incoming');
+}
+
+function acceptIncomingOrder() {
+  if (!incomingOrderId) return;
+  const orders = getDB(STORAGE_KEYS.ORDERS);
+  const order = orders.find(o => o.id === incomingOrderId);
+  if (!order) return;
+  
+  order.therapistId = AppState.currentUser.id;
+  order.therapistName = AppState.currentUser.name;
+  order.therapistPhone = AppState.currentUser.phone;
+  order.status = 'diterima';
+  order.acceptedAt = new Date().toISOString();
+  
+  saveDB(STORAGE_KEYS.ORDERS, orders);
+  closeModal('incoming-order-modal');
+  
+  addNotification('customer', order.customerId, 'Pesanan Diterima', `Terapis ${order.therapistName} telah menerima pesanan Anda!`);
+  showToast('Pesanan berhasil diterima! Hubungi pelanggan atau mulai perjalanan.', 'success');
+  
+  renderApp();
+}
+
+function rejectIncomingOrder() {
+  const reason = prompt('Masukkan alasan penolakan pesanan (misal: jarak terlalu jauh, ada kendala mendesak):', 'Jarak terlalu jauh');
+  if (reason === null) return; // cancelled prompt
+  
+  if (!incomingOrderId) return;
+  const orders = getDB(STORAGE_KEYS.ORDERS);
+  const order = orders.find(o => o.id === incomingOrderId);
+  if (!order) return;
+  
+  // Find next active therapist
+  const currentThId = AppState.currentUser.id;
+  const therapists = getDB(STORAGE_KEYS.THERAPISTS).filter(t => t.id !== currentThId && t.status === 'approved' && t.isActive && t.isOnline);
+  
+  if (therapists.length > 0) {
+    // Reassign to next closest therapist
+    therapists.sort((a, b) => {
+      const dA = calculateDistance(order.customerLat, order.customerLng, a.lat, a.lng);
+      const dB = calculateDistance(order.customerLat, order.customerLng, b.lat, b.lng);
+      return dA - dB;
+    });
+    const nextTh = therapists[0];
+    order.therapistId = nextTh.id;
+    order.therapistName = nextTh.name;
+    order.therapistPhone = nextTh.phone;
+    addNotification('therapist', nextTh.id, 'Pengalihan Pesanan Masuk', `Pesanan ${order.id} dialihkan ke Anda dari terapis sebelumnya.`);
+    showToast(`Pesanan ditolak (${reason}). Sistem otomatis mengalihkan pesanan ke terapis aktif berikutnya (${nextTh.name}).`, 'info');
+  } else {
+    // No other online therapist right now
+    order.therapistId = null;
+    order.therapistName = 'Mencari Terapis...';
+    showToast(`Pesanan ditolak (${reason}). Sistem menempatkan pesanan dalam antrian pencarian terapis.`, 'info');
+  }
+  
+  saveDB(STORAGE_KEYS.ORDERS, orders);
+  closeModal('incoming-order-modal');
+  incomingOrderId = null;
+  renderApp();
+}
+
+// Propose Extra Fee (Biaya Tambahan)
+function openProposeExtraFeeModal(orderId) {
+  const modal = document.getElementById('extra-fee-modal');
+  document.getElementById('propose-fee-order-id').value = orderId;
+  document.getElementById('propose-fee-amount').value = '';
+  document.getElementById('propose-fee-reason').value = '';
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function submitProposeExtraFee() {
+  const orderId = document.getElementById('propose-fee-order-id').value;
+  const amount = parseInt(document.getElementById('propose-fee-amount').value, 10);
+  const reason = document.getElementById('propose-fee-reason').value.trim();
+  
+  if (!amount || amount <= 0 || !reason) {
+    showToast('Harap masukkan nominal biaya dan alasan yang jelas.', 'error');
+    return;
+  }
+  
+  const orders = getDB(STORAGE_KEYS.ORDERS);
+  const order = orders.find(o => o.id === orderId);
+  if (!order) return;
+  
+  order.extraFee = {
+    amount,
+    reason,
+    status: 'pending' // pending -> approved / rejected
+  };
+  
+  saveDB(STORAGE_KEYS.ORDERS, orders);
+  addNotification('customer', order.customerId, 'Pengajuan Biaya Tambahan', `Terapis mengajukan biaya tambahan sebesar ${formatRupiah(amount)} untuk: ${reason}. Silakan beri persetujuan.`);
+  
+  closeModal('extra-fee-modal');
+  showToast('Pengajuan biaya tambahan berhasil dikirim ke pelanggan. Menunggu persetujuan.', 'success');
+  renderApp();
+}
+
+/* =========================================================
+   ADMINISTRATOR DASHBOARD & AUDIT LOG
+   ========================================================= */
+
+function switchAdminTab(tabName) {
+  AppState.adminTab = tabName;
+  document.querySelectorAll('.admin-nav-btn').forEach(btn => {
+    btn.classList.remove('bg-emerald-600', 'text-white', 'shadow-md');
+    btn.classList.add('text-gray-600', 'hover:bg-gray-100');
+  });
+  const activeBtn = document.getElementById('admin-btn-' + tabName);
+  if (activeBtn) {
+    activeBtn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+    activeBtn.classList.add('bg-emerald-600', 'text-white', 'shadow-md');
+  }
+  
+  document.querySelectorAll('.admin-section-view').forEach(view => view.classList.add('hidden'));
+  const activeView = document.getElementById('admin-section-' + tabName);
+  if (activeView) activeView.classList.remove('hidden');
+  
+  renderAdminContent();
+}
+
+function renderAdminContent() {
+  const orders = getDB(STORAGE_KEYS.ORDERS);
+  const therapists = getDB(STORAGE_KEYS.THERAPISTS);
+  const customers = getDB(STORAGE_KEYS.CUSTOMERS);
+  const services = getDB(STORAGE_KEYS.SERVICES);
+  const reviews = getDB(STORAGE_KEYS.REVIEWS);
+  const priceHistory = getDB(STORAGE_KEYS.PRICE_HISTORY);
+  
+  // 1. Stats calculation
+  const completedOrders = orders.filter(o => o.status === 'selesai');
+  const activeOrders = orders.filter(o => ['diterima', 'menuju_lokasi', 'tiba', 'sesi_dimulai'].includes(o.status));
+  const pendingOrders = orders.filter(o => o.status === 'menunggu');
+  const totalRevenue = completedOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  
+  const approvedTherapists = therapists.filter(t => t.status === 'approved');
+  const pendingTherapists = therapists.filter(t => t.status === 'pending');
+  
+  document.getElementById('admin-stat-revenue').innerText = formatRupiah(totalRevenue);
+  document.getElementById('admin-stat-orders').innerText = orders.length;
+  document.getElementById('admin-stat-completed').innerText = completedOrders.length;
+  document.getElementById('admin-stat-active').innerText = activeOrders.length;
+  document.getElementById('admin-stat-customers').innerText = customers.length;
+  document.getElementById('admin-stat-therapists').innerText = `${approvedTherapists.length} (Menunggu: ${pendingTherapists.length})`;
+  
+  // Render Pending Therapist Verifications
+  const pendingThContainer = document.getElementById('admin-pending-therapists-list');
+  if (pendingTherapists.length === 0) {
+    pendingThContainer.innerHTML = `<div class="p-6 text-center text-gray-400 text-sm bg-gray-50 rounded-xl">Tidak ada pendaftaran terapis yang menunggu persetujuan.</div>`;
+  } else {
+    pendingThContainer.innerHTML = pendingTherapists.map(t => `
+      <div class="p-4 bg-white rounded-xl border border-amber-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex items-center space-x-3">
+          <img src="${escapeHtml(t.photo)}" alt="${escapeHtml(t.name)}" class="w-12 h-12 rounded-full object-cover border">
+          <div>
+            <div class="font-bold text-gray-900">${escapeHtml(t.name)} <span class="text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-800 ml-1">Menunggu Persetujuan</span></div>
+            <div class="text-xs text-gray-500">${escapeHtml(t.email)} • ${escapeHtml(t.phone)} • Pengalaman: ${t.experienceYears} Thn</div>
+            <div class="text-xs text-emerald-700 mt-0.5">Keahlian: ${(t.specialties || []).join(', ')}</div>
+            <div class="text-xs text-gray-400 mt-0.5">Alamat: ${escapeHtml(t.address)}</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="approveTherapist('${t.id}', true)" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5">
+            <i class="fa-solid fa-check"></i> Setujui
+          </button>
+          <button onclick="approveTherapist('${t.id}', false)" class="px-4 py-2 bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5">
+            <i class="fa-solid fa-xmark"></i> Tolak
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  // Render Approved Therapists List with Toggle Aktif/Nonaktif
+  const approvedThContainer = document.getElementById('admin-approved-therapists-list');
+  approvedThContainer.innerHTML = approvedTherapists.map(t => `
+    <div class="p-4 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="relative">
+          <img src="${escapeHtml(t.photo)}" alt="${escapeHtml(t.name)}" class="w-12 h-12 rounded-full object-cover border">
+          <span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white ${t.isOnline ? 'bg-emerald-500' : 'bg-gray-400'}"></span>
+        </div>
+        <div>
+          <div class="font-bold text-gray-900 flex items-center gap-2">
+            ${escapeHtml(t.name)}
+            <span class="text-xs px-2 py-0.5 rounded-full ${t.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+              ${t.isActive ? 'Aktif' : 'Dinonaktifkan Admin'}
+            </span>
+          </div>
+          <div class="text-xs text-gray-500">${escapeHtml(t.email)} • ${escapeHtml(t.phone)}</div>
+          <div class="text-xs text-amber-600 flex items-center gap-1 mt-0.5">
+            <i class="fa-solid fa-star text-[10px]"></i> ${t.rating || 5.0} (${t.reviewCount || 0} Ulasan) • ${t.isOnline ? 'Online' : 'Offline'}
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="toggleTherapistActive('${t.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${t.isActive ? 'bg-rose-50 text-rose-700 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}">
+          ${t.isActive ? 'Nonaktifkan Akun' : 'Aktifkan Akun'}
+        </button>
+      </div>
+    </div>
+  `).join('');
+  
+  // Render Customer List
+  const custListContainer = document.getElementById('admin-customers-list');
+  custListContainer.innerHTML = customers.map(c => {
+    const custOrders = orders.filter(o => o.customerId === c.id);
+    return `
+      <div class="p-4 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <div class="font-bold text-gray-900">${escapeHtml(c.name)} <span class="text-xs text-emerald-600 font-normal"><i class="fa-solid fa-circle-check"></i> Terverifikasi</span></div>
+          <div class="text-xs text-gray-500">${escapeHtml(c.email)} • ${escapeHtml(c.phone)}</div>
+          <div class="text-xs text-gray-400 mt-0.5"><i class="fa-solid fa-location-dot mr-1"></i>${escapeHtml(c.address)}</div>
+        </div>
+        <div class="text-right">
+          <span class="text-xs font-semibold px-2.5 py-1 bg-gray-100 rounded-full text-gray-700">${custOrders.length} Pesanan</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  // Render All Orders Table
+  renderAdminOrdersTable(orders);
+  
+  // Render Services CRUD & Price History
+  renderAdminServices(services);
+  renderAdminPriceHistory(priceHistory);
+  renderAdminReviews(reviews);
+  renderAdminRecap(orders);
+}
+
+function approveTherapist(thId, isApproved) {
+  const therapists = getDB(STORAGE_KEYS.THERAPISTS);
+  const th = therapists.find(t => t.id === thId);
+  if (!th) return;
+  
+  th.status = isApproved ? 'approved' : 'rejected';
+  th.isActive = isApproved;
+  saveDB(STORAGE_KEYS.THERAPISTS, therapists);
+  
+  addNotification('therapist', th.id, isApproved ? 'Akun Anda Telah Disetujui' : 'Permohonan Ditolak', isApproved ? 'Selamat! Akun terapis Anda telah diverifikasi oleh Admin. Anda kini dapat login dan menerima pesanan.' : 'Mohon maaf, pendaftaran akun Anda tidak memenuhi kriteria verifikasi.');
+  
+  showToast(`Terapis ${th.name} telah ${isApproved ? 'disetujui' : 'ditolak'}.`, 'success');
+  renderAdminContent();
+}
+
+function toggleTherapistActive(thId) {
+  const therapists = getDB(STORAGE_KEYS.THERAPISTS);
+  const th = therapists.find(t => t.id === thId);
+  if (!th) return;
+  
+  th.isActive = !th.isActive;
+  saveDB(STORAGE_KEYS.THERAPISTS, therapists);
+  showToast(`Status akun ${th.name} diubah menjadi: ${th.isActive ? 'Aktif' : 'Nonaktif'}.`, 'info');
+  renderAdminContent();
+}
+
+function renderAdminOrdersTable(orders) {
+  const container = document.getElementById('admin-orders-table-body');
+  if (!container) return;
+  
+  container.innerHTML = orders.map(o => `
+    <tr class="border-b border-gray-100 hover:bg-gray-50 text-xs">
+      <td class="p-3 font-semibold text-gray-800">${o.id}</td>
+      <td class="p-3">
+        <div class="font-medium text-gray-900">${escapeHtml(o.customerName)}</div>
+        <div class="text-[11px] text-gray-400">${escapeHtml(o.customerPhone)}</div>
+      </td>
+      <td class="p-3">
+        <div class="font-medium text-emerald-800">${escapeHtml(o.therapistName)}</div>
+      </td>
+      <td class="p-3">
+        <div>${escapeHtml(o.serviceName)}</div>
+        <div class="text-[11px] text-gray-400">${o.durationMinutes} Menit</div>
+      </td>
+      <td class="p-3 font-semibold text-gray-900">${formatRupiah(o.totalPrice)}</td>
+      <td class="p-3">
+        <span class="px-2 py-1 rounded-full text-[10px] font-bold ${
+          o.status === 'selesai' ? 'bg-emerald-100 text-emerald-800' :
+          o.status === 'sesi_dimulai' ? 'bg-blue-100 text-blue-800' :
+          o.status === 'menunggu' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-800'
+        }">${o.status}</span>
+      </td>
+      <td class="p-3 text-right">
+        <button onclick="openOrderTracking('${o.id}')" class="px-2 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded font-medium">Lihat</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function renderAdminServices(services) {
+  const container = document.getElementById('admin-services-list');
+  if (!container) return;
+  
+  container.innerHTML = services.map(s => `
+    <div class="p-4 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div class="flex items-start space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
+          <i class="fa-solid ${s.icon || 'fa-spa'}"></i>
+        </div>
+        <div>
+          <div class="font-bold text-gray-900">${escapeHtml(s.name)} <span class="text-xs px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-normal">${s.category}</span></div>
+          <div class="text-xs text-gray-500 mt-0.5">${escapeHtml(s.description)}</div>
+          <div class="text-xs font-semibold text-gray-800 mt-1 flex flex-wrap gap-2">
+            ${(s.durations || []).map(d => `<span class="bg-gray-100 px-2 py-0.5 rounded">${d.minutes} mnt: ${formatRupiah(d.price)}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="openEditServiceModal('${s.id}')" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold">
+          <i class="fa-solid fa-pen-to-square mr-1"></i> Edit Tarif
+        </button>
+        <button onclick="deleteService('${s.id}')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-bold">
+          <i class="fa-solid fa-trash mr-1"></i> Hapus
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderAdminPriceHistory(history) {
+  const container = document.getElementById('admin-price-history-body');
+  if (!container) return;
+  
+  container.innerHTML = history.map(h => `
+    <tr class="border-b border-gray-100 text-xs">
+      <td class="p-3 text-gray-500">${formatDate(h.timestamp)}</td>
+      <td class="p-3 font-semibold text-gray-900">${escapeHtml(h.serviceName)}</td>
+      <td class="p-3 text-gray-500 line-through">${formatRupiah(h.oldPrice)}</td>
+      <td class="p-3 font-bold text-emerald-700">${formatRupiah(h.newPrice)}</td>
+      <td class="p-3 text-gray-600">${escapeHtml(h.reason || 'Penyesuaian tarif')}</td>
+      <td class="p-3 text-gray-400">${escapeHtml(h.changedBy)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderAdminReviews(reviews) {
+  const container = document.getElementById('admin-reviews-list');
+  if (!container) return;
+  
+  container.innerHTML = reviews.map(r => `
+    <div class="p-4 bg-white rounded-xl border border-gray-200 shadow-sm mb-3">
+      <div class="flex items-center justify-between mb-1">
+        <div class="font-bold text-sm text-gray-900">${escapeHtml(r.customerName)} <span class="text-xs text-gray-400 font-normal">mengulas</span> ${escapeHtml(r.therapistName)}</div>
+        <div class="text-amber-500 text-xs font-bold flex items-center gap-1">
+          <i class="fa-solid fa-star"></i> ${r.rating}.0
+        </div>
+      </div>
+      <div class="text-xs text-emerald-700 mb-1.5 font-medium">Layanan: ${escapeHtml(r.serviceName)}</div>
+      <p class="text-xs text-gray-600 italic">"${escapeHtml(r.comment)}"</p>
+      <div class="text-[10px] text-gray-400 mt-2 text-right">${formatDate(r.createdAt)}</div>
+    </div>
+  `).join('');
+}
+
+function renderAdminRecap(orders) {
+  const completed = orders.filter(o => o.status === 'selesai');
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  
+  // Daily recap
+  const todayOrders = completed.filter(o => (o.completedAt || o.createdAt || '').startsWith(todayStr));
+  const todayIncome = todayOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  
+  // Weekly recap (last 7 days)
+  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const weekOrders = completed.filter(o => new Date(o.completedAt || o.createdAt) >= oneWeekAgo);
+  const weekIncome = weekOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  
+  // Monthly recap (current month)
+  const currentMonthStr = todayStr.slice(0, 7);
+  const monthOrders = completed.filter(o => (o.completedAt || o.createdAt || '').startsWith(currentMonthStr));
+  const monthIncome = monthOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  
+  document.getElementById('recap-daily-orders').innerText = todayOrders.length + ' Selesai';
+  document.getElementById('recap-daily-income').innerText = formatRupiah(todayIncome);
+  
+  document.getElementById('recap-weekly-orders').innerText = weekOrders.length + ' Selesai';
+  document.getElementById('recap-weekly-income').innerText = formatRupiah(weekIncome);
+  
+  document.getElementById('recap-monthly-orders').innerText = monthOrders.length + ' Selesai';
+  document.getElementById('recap-monthly-income').innerText = formatRupiah(monthIncome);
+}
+
+// Service CRUD Handlers
+function openAddServiceModal() {
+  document.getElementById('service-modal-title').innerText = 'Tambah Layanan Baru';
+  document.getElementById('edit-service-id').value = '';
+  document.getElementById('service-form-name').value = '';
+  document.getElementById('service-form-tagline').value = '';
+  document.getElementById('service-form-desc').value = '';
+  document.getElementById('service-form-category').value = 'Relaksasi';
+  document.getElementById('service-form-p60').value = 100000;
+  document.getElementById('service-form-p90').value = 140000;
+  document.getElementById('service-form-p120').value = 180000;
+  
+  const modal = document.getElementById('service-modal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function openEditServiceModal(serviceId) {
+  const services = getDB(STORAGE_KEYS.SERVICES);
+  const service = services.find(s => s.id === serviceId);
+  if (!service) return;
+  
+  document.getElementById('service-modal-title').innerText = 'Edit Layanan & Tarif';
+  document.getElementById('edit-service-id').value = service.id;
+  document.getElementById('service-form-name').value = service.name;
+  document.getElementById('service-form-tagline').value = service.tagline || '';
+  document.getElementById('service-form-desc').value = service.description || '';
+  document.getElementById('service-form-category').value = service.category || 'Relaksasi';
+  
+  const d60 = service.durations.find(d => d.minutes === 60);
+  const d90 = service.durations.find(d => d.minutes === 90);
+  const d120 = service.durations.find(d => d.minutes === 120);
+  
+  document.getElementById('service-form-p60').value = d60 ? d60.price : service.basePrice;
+  document.getElementById('service-form-p90').value = d90 ? d90.price : (service.basePrice * 1.4);
+  document.getElementById('service-form-p120').value = d120 ? d120.price : (service.basePrice * 1.8);
+  
+  const modal = document.getElementById('service-modal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function saveServiceModal(event) {
+  event.preventDefault();
+  const id = document.getElementById('edit-service-id').value;
+  const name = document.getElementById('service-form-name').value.trim();
+  const tagline = document.getElementById('service-form-tagline').value.trim();
+  const description = document.getElementById('service-form-desc').value.trim();
+  const category = document.getElementById('service-form-category').value;
+  const p60 = parseInt(document.getElementById('service-form-p60').value, 10) || 100000;
+  const p90 = parseInt(document.getElementById('service-form-p90').value, 10) || 140000;
+  const p120 = parseInt(document.getElementById('service-form-p120').value, 10) || 180000;
+  
+  const services = getDB(STORAGE_KEYS.SERVICES);
+  
+  if (id) {
+    // Edit existing service
+    const existing = services.find(s => s.id === id);
+    if (existing) {
+      const oldPrice = existing.basePrice;
+      existing.name = name;
+      existing.tagline = tagline;
+      existing.description = description;
+      existing.category = category;
+      existing.basePrice = p60;
+      existing.durations = [
+        { minutes: 60, price: p60 },
+        { minutes: 90, price: p90 },
+        { minutes: 120, price: p120 }
+      ];
+      
+      // If price changed, write to priceHistory audit log
+      if (oldPrice !== p60) {
+        const history = getDB(STORAGE_KEYS.PRICE_HISTORY);
+        history.unshift({
+          id: 'ph-' + Date.now(),
+          serviceId: existing.id,
+          serviceName: existing.name,
+          oldPrice,
+          newPrice: p60,
+          changedBy: AppState.currentUser ? AppState.currentUser.email : 'calonbikers85@gmail.com',
+          reason: 'Pembaruan tarif oleh Admin',
+          timestamp: new Date().toISOString()
+        });
+        saveDB(STORAGE_KEYS.PRICE_HISTORY, history);
+      }
+      showToast('Layanan berhasil diperbarui.', 'success');
+    }
+  } else {
+    // Create new service
+    const newService = {
+      id: 'srv-' + Date.now(),
+      name,
+      tagline,
+      description,
+      category,
+      basePrice: p60,
+      durations: [
+        { minutes: 60, price: p60 },
+        { minutes: 90, price: p90 },
+        { minutes: 120, price: p120 }
+      ],
+      icon: 'fa-spa',
+      badge: 'Baru'
+    };
+    services.push(newService);
+    showToast('Layanan baru berhasil ditambahkan.', 'success');
+  }
+  
+  saveDB(STORAGE_KEYS.SERVICES, services);
+  closeModal('service-modal');
+  renderAdminContent();
+}
+
+function deleteService(serviceId) {
+  if (!confirm('Apakah Anda yakin ingin menghapus layanan ini?')) return;
+  let services = getDB(STORAGE_KEYS.SERVICES);
+  services = services.filter(s => s.id !== serviceId);
+  saveDB(STORAGE_KEYS.SERVICES, services);
+  showToast('Layanan berhasil dihapus.', 'info');
+  renderAdminContent();
+}
+
+
+
+/* =========================================================
+   VIEWS RENDERING & APP LIFECYCLE
+   ========================================================= */
+
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+function setCustomerTab(tab) {
+  AppState.activeTab = tab;
+  document.querySelectorAll('.cust-nav-btn').forEach(b => {
+    b.classList.remove('text-emerald-700', 'font-bold');
+    b.classList.add('text-gray-400');
+  });
+  const activeBtn = document.getElementById('cust-nav-' + tab);
+  if (activeBtn) {
+    activeBtn.classList.remove('text-gray-400');
+    activeBtn.classList.add('text-emerald-700', 'font-bold');
+  }
+  
+  document.querySelectorAll('.cust-view-tab').forEach(v => v.classList.add('hidden'));
+  const activeView = document.getElementById('cust-view-' + tab);
+  if (activeView) activeView.classList.remove('hidden');
+  
+  if (tab === 'history') {
+    renderCustomerOrdersHistory();
+  }
+}
+
+function setTherapistTab(tab) {
+  AppState.activeTab = tab;
+  document.querySelectorAll('.th-nav-btn').forEach(b => {
+    b.classList.remove('text-emerald-700', 'font-bold');
+    b.classList.add('text-gray-400');
+  });
+  const activeBtn = document.getElementById('th-nav-' + tab);
+  if (activeBtn) {
+    activeBtn.classList.remove('text-gray-400');
+    activeBtn.classList.add('text-emerald-700', 'font-bold');
+  }
+  
+  document.querySelectorAll('.th-view-tab').forEach(v => v.classList.add('hidden'));
+  const activeView = document.getElementById('th-view-' + tab);
+  if (activeView) activeView.classList.remove('hidden');
+  
+  if (tab === 'history') {
+    renderTherapistHistory();
+  }
+}
+
+function switchAuthTab(type) {
+  document.querySelectorAll('.auth-panel').forEach(p => p.classList.add('hidden'));
+  document.querySelectorAll('.auth-tab-btn').forEach(b => {
+    b.classList.remove('border-emerald-600', 'text-emerald-700', 'bg-emerald-50');
+    b.classList.add('border-transparent', 'text-gray-500');
+  });
+  
+  const activePanel = document.getElementById('auth-panel-' + type);
+  const activeBtn = document.getElementById('auth-tab-' + type);
+  if (activePanel) activePanel.classList.remove('hidden');
+  if (activeBtn) {
+    activeBtn.classList.remove('border-transparent', 'text-gray-500');
+    activeBtn.classList.add('border-emerald-600', 'text-emerald-700', 'bg-emerald-50');
+  }
+}
+
+function renderApp() {
+  const root = document.getElementById('app-root');
+  if (!root) return;
+  
+  // Update Demo Toolbar badges
+  const roleBadge = document.getElementById('demo-current-role-badge');
+  if (roleBadge) {
+    if (AppState.currentRole === 'customer') {
+      roleBadge.innerText = 'Pelanggan: ' + (AppState.currentUser ? AppState.currentUser.name.split(' ')[0] : '');
+      roleBadge.className = 'px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800';
+    } else if (AppState.currentRole === 'therapist') {
+      roleBadge.innerText = 'Terapis: ' + (AppState.currentUser ? AppState.currentUser.name.split(' ')[0] : '');
+      roleBadge.className = 'px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800';
+    } else if (AppState.currentRole === 'admin') {
+      roleBadge.innerText = 'Administrator';
+      roleBadge.className = 'px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800';
+    } else {
+      roleBadge.innerText = 'Belum Login';
+      roleBadge.className = 'px-2 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-700';
+    }
+  }
+  
+  // Show/Hide Role Views
+  const authSection = document.getElementById('view-auth');
+  const customerSection = document.getElementById('view-customer');
+  const therapistSection = document.getElementById('view-therapist');
+  const adminSection = document.getElementById('view-admin');
+  
+  authSection.classList.add('hidden');
+  customerSection.classList.add('hidden');
+  therapistSection.classList.add('hidden');
+  adminSection.classList.add('hidden');
+  
+  if (!AppState.currentRole) {
+    authSection.classList.remove('hidden');
+    switchAuthTab('login-customer');
+  } else if (AppState.currentRole === 'customer') {
+    customerSection.classList.remove('hidden');
+    renderCustomerDashboard();
+  } else if (AppState.currentRole === 'therapist') {
+    therapistSection.classList.remove('hidden');
+    renderTherapistDashboard();
+  } else if (AppState.currentRole === 'admin') {
+    adminSection.classList.remove('hidden');
+    switchAdminTab(AppState.adminTab || 'stats');
+  }
+}
+
+// Render Customer Dashboard
+function renderCustomerDashboard() {
+  const cust = AppState.currentUser;
+  if (!cust) return;
+  
+  document.getElementById('cust-header-name').innerText = cust.name;
+  document.getElementById('cust-header-address').innerText = cust.address || 'Pekalongan, Jawa Tengah';
+  
+  // Active Order Banner check
+  const orders = getDB(STORAGE_KEYS.ORDERS);
+  const activeOrder = orders.find(o => o.customerId === cust.id && ['menunggu', 'diterima', 'menuju_lokasi', 'tiba', 'sesi_dimulai'].includes(o.status));
+  
+  const banner = document.getElementById('cust-active-order-banner');
+  if (activeOrder) {
+    banner.classList.remove('hidden');
+    document.getElementById('active-order-service-name').innerText = activeOrder.serviceName;
+    document.getElementById('active-order-status-tag').innerText = activeOrder.status.replace('_', ' ').toUpperCase();
+    banner.onclick = () => openOrderTracking(activeOrder.id);
+  } else {
+    banner.classList.add('hidden');
+  }
+  
+  // Render Categories & Services
+  renderCustomerServices();
+  renderCustomerNearbyTherapists();
+}
+
+function filterServiceCategory(cat) {
+  AppState.selectedCategory = cat;
+  document.querySelectorAll('.cat-pill').forEach(p => {
+    p.classList.remove('bg-emerald-600', 'text-white', 'shadow-md');
+    p.classList.add('bg-white', 'text-gray-700', 'border');
+  });
+  const activePill = document.getElementById('cat-pill-' + cat.replace(/\s+/g, '-'));
+  if (activePill) {
+    activePill.classList.remove('bg-white', 'text-gray-700', 'border');
+    activePill.classList.add('bg-emerald-600', 'text-white', 'shadow-md');
+  }
+  renderCustomerServices();
+}
+
+function renderCustomerServices() {
+  const services = getDB(STORAGE_KEYS.SERVICES);
+  const container = document.getElementById('cust-services-grid');
+  if (!container) return;
+  
+  let filtered = services;
+  if (AppState.selectedCategory && AppState.selectedCategory !== 'Semua') {
+    filtered = services.filter(s => s.category === AppState.selectedCategory);
+  }
+  
+  container.innerHTML = filtered.map(s => `
+    <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover-lift flex flex-col justify-between">
+      <div>
+        <div class="flex items-start justify-between">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-xl shadow-inner mb-3">
+            <i class="fa-solid ${s.icon || 'fa-spa'}"></i>
+          </div>
+          ${s.badge ? `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">${s.badge}</span>` : ''}
+        </div>
+        <h3 class="font-bold text-gray-900 text-base leading-tight mb-1">${escapeHtml(s.name)}</h3>
+        <p class="text-xs text-emerald-800 font-medium mb-1.5">${escapeHtml(s.tagline || '')}</p>
+        <p class="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-3">${escapeHtml(s.description)}</p>
+      </div>
+      <div>
+        <div class="flex items-baseline justify-between pt-2 border-t border-gray-100 mb-3">
+          <span class="text-[11px] text-gray-400">Mulai dari</span>
+          <span class="font-bold text-base text-emerald-700">${formatRupiah(s.basePrice)}</span>
+        </div>
+        <button onclick="openBookingModal('${s.id}')" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
+          <span>Pesan Sekarang</span>
+          <i class="fa-solid fa-arrow-right text-[10px]"></i>
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderCustomerNearbyTherapists() {
+  const container = document.getElementById('cust-nearby-therapists');
+  if (!container) return;
+  const therapists = getDB(STORAGE_KEYS.THERAPISTS).filter(t => t.status === 'approved' && t.isActive);
+  const custLat = AppState.currentUser?.lat || PEKALONGAN_COORDS.lat;
+  const custLng = AppState.currentUser?.lng || PEKALONGAN_COORDS.lng;
+  
+  therapists.sort((a, b) => {
+    return calculateDistance(custLat, custLng, a.lat, a.lng) - calculateDistance(custLat, custLng, b.lat, b.lng);
+  });
+  
+  container.innerHTML = therapists.slice(0, 4).map(t => {
+    const dist = calculateDistance(custLat, custLng, t.lat, t.lng);
+    return `
+      <div class="min-w-[220px] bg-white rounded-2xl p-3 border border-gray-100 shadow-sm flex flex-col justify-between snap-start">
+        <div class="flex items-center space-x-3 mb-2">
+          <div class="relative">
+            <img src="${escapeHtml(t.photo)}" alt="${escapeHtml(t.name)}" class="w-12 h-12 rounded-xl object-cover border">
+            <span class="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${t.isOnline ? 'bg-emerald-500' : 'bg-gray-400'}"></span>
+          </div>
+          <div>
+            <div class="font-bold text-xs text-gray-900 leading-tight">${escapeHtml(t.name)}</div>
+            <div class="text-[10px] text-amber-600 font-semibold flex items-center gap-1 mt-0.5">
+              <i class="fa-solid fa-star text-[9px]"></i> ${t.rating || 5.0} (${t.reviewCount || 0})
+            </div>
+            <div class="text-[10px] text-gray-400 mt-0.5"><i class="fa-solid fa-location-dot text-emerald-600 mr-1"></i>${dist} km</div>
+          </div>
+        </div>
+        <div class="text-[10px] text-gray-500 line-clamp-1 mb-2 bg-gray-50 p-1.5 rounded-lg">
+          ${(t.specialties || []).slice(0, 2).join(', ')}
+        </div>
+        <button onclick="openBookingModal('srv-1')" class="w-full py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-bold rounded-lg transition-colors">
+          Pilih Terapis
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderCustomerOrdersHistory() {
+  const container = document.getElementById('cust-history-list');
+  if (!container) return;
+  const cust = AppState.currentUser;
+  if (!cust) return;
+  
+  const orders = getDB(STORAGE_KEYS.ORDERS).filter(o => o.customerId === cust.id);
+  
+  if (orders.length === 0) {
+    container.innerHTML = `
+      <div class="p-8 text-center text-gray-400 text-xs">
+        <i class="fa-regular fa-clipboard text-3xl mb-2 block"></i>
+        Belum ada riwayat pesanan. Nikmati kenyamanan pijat di rumah dengan memesan terapis sekarang.
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = orders.map(o => `
+    <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm mb-3">
+      <div class="flex items-center justify-between pb-2 border-b border-gray-100 mb-2">
+        <span class="text-xs font-bold text-gray-500">${o.id}</span>
+        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+          o.status === 'selesai' ? 'bg-emerald-100 text-emerald-800' :
+          o.status === 'menunggu' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+        }">${o.status.toUpperCase()}</span>
+      </div>
+      <div class="flex items-center justify-between mb-2">
+        <div>
+          <h4 class="font-bold text-sm text-gray-900">${escapeHtml(o.serviceName)}</h4>
+          <div class="text-xs text-gray-500">${o.durationMinutes} Menit • Terapis: ${escapeHtml(o.therapistName)}</div>
+        </div>
+        <div class="text-right font-bold text-sm text-emerald-700">${formatRupiah(o.totalPrice)}</div>
+      </div>
+      <div class="flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-50">
+        <span>${formatDate(o.createdAt)}</span>
+        <div class="flex items-center gap-2">
+          ${o.status === 'selesai' && !o.hasReviewed ? `
+            <button onclick="openReviewModal('${o.id}')" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold text-xs">
+              <i class="fa-solid fa-star mr-1 text-[10px]"></i> Beri Ulasan
+            </button>
+          ` : ''}
+          <button onclick="openOrderTracking('${o.id}')" class="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg font-bold text-xs">
+            Pelacakan & Detail
+          </button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Render Therapist Dashboard
+function renderTherapistDashboard() {
+  const th = AppState.currentUser;
+  if (!th) return;
+  
+  document.getElementById('th-header-name').innerText = th.name;
+  document.getElementById('th-header-rating').innerText = th.rating || 5.0;
+  
+  // Status switch UI
+  const statusToggle = document.getElementById('th-status-toggle');
+  const statusLabel = document.getElementById('th-status-label');
+  if (th.isOnline) {
+    statusToggle.checked = true;
+    statusLabel.innerText = 'ONLINE (Siap Menerima Pesanan)';
+    statusLabel.className = 'text-xs font-bold text-emerald-700';
+  } else {
+    statusToggle.checked = false;
+    statusLabel.innerText = 'OFFLINE (Istirahat)';
+    statusLabel.className = 'text-xs font-bold text-gray-400';
+  }
+  
+  // Pending Approval warning
+  const pendingBanner = document.getElementById('th-pending-approval-banner');
+  if (th.status === 'pending') {
+    pendingBanner.classList.remove('hidden');
+  } else {
+    pendingBanner.classList.add('hidden');
+  }
+  
+  // Active Job Card
+  const orders = getDB(STORAGE_KEYS.ORDERS);
+  const activeJob = orders.find(o => o.therapistId === th.id && ['diterima', 'menuju_lokasi', 'tiba', 'sesi_dimulai'].includes(o.status));
+  const activeJobCard = document.getElementById('th-active-job-card');
+  const noJobCard = document.getElementById('th-no-job-card');
+  
+  if (activeJob) {
+    activeJobCard.classList.remove('hidden');
+    noJobCard.classList.add('hidden');
+    renderTherapistActiveJob(activeJob);
+  } else {
+    activeJobCard.classList.add('hidden');
+    noJobCard.classList.remove('hidden');
+  }
+  
+  // Check incoming popup
+  checkTherapistIncomingOrders();
+}
+
+function renderTherapistActiveJob(job) {
+  document.getElementById('job-order-id').innerText = job.id;
+  document.getElementById('job-customer-name').innerText = job.customerName;
+  document.getElementById('job-customer-address').innerText = job.customerAddress;
+  document.getElementById('job-customer-phone').innerText = job.customerPhone;
+  document.getElementById('job-service-name').innerText = job.serviceName;
+  document.getElementById('job-duration').innerText = job.durationMinutes + ' Menit';
+  document.getElementById('job-notes').innerText = job.notes || '-';
+  document.getElementById('job-total-price').innerText = formatRupiah(job.totalPrice);
+  
+  // Distance to customer
+  const dist = calculateDistance(AppState.currentUser.lat, AppState.currentUser.lng, job.customerLat, job.customerLng);
+  document.getElementById('job-distance').innerText = dist + ' km';
+  
+  // Navigation button
+  document.getElementById('job-maps-btn').onclick = () => {
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${job.customerLat || PEKALONGAN_COORDS.lat},${job.customerLng || PEKALONGAN_COORDS.lng}`;
+    window.open(url, '_blank');
+  };
+  
+  // Chat and Call
+  document.getElementById('job-chat-btn').onclick = () => openChatModal(job.id);
+  document.getElementById('job-call-btn').onclick = () => openCallModal(job.customerName, job.customerPhone);
+  
+  // Extra Fee button
+  document.getElementById('job-extra-fee-btn').onclick = () => openProposeExtraFeeModal(job.id);
+  
+  // Extra Fee status badge
+  const extraFeeBadge = document.getElementById('job-extra-fee-status-badge');
+  if (job.extraFee) {
+    extraFeeBadge.classList.remove('hidden');
+    extraFeeBadge.innerText = `Biaya Tambahan: ${formatRupiah(job.extraFee.amount)} (${job.extraFee.status.toUpperCase()})`;
+  } else {
+    extraFeeBadge.classList.add('hidden');
+  }
+  
+  // Step Progression Button based on current status
+  const actionBtnContainer = document.getElementById('job-action-buttons');
+  if (job.status === 'diterima') {
+    actionBtnContainer.innerHTML = `
+      <button onclick="updateJobStatus('${job.id}', 'menuju_lokasi')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm shadow-md flex items-center justify-center gap-2">
+        <i class="fa-solid fa-motorcycle"></i> Berangkat Menuju Lokasi Customer
+      </button>
+    `;
+  } else if (job.status === 'menuju_lokasi') {
+    actionBtnContainer.innerHTML = `
+      <button onclick="updateJobStatus('${job.id}', 'tiba')" class="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-sm shadow-md flex items-center justify-center gap-2">
+        <i class="fa-solid fa-location-dot"></i> Saya Telah Tiba di Lokasi Customer
+      </button>
+    `;
+  } else if (job.status === 'tiba') {
+    actionBtnContainer.innerHTML = `
+      <button onclick="updateJobStatus('${job.id}', 'sesi_dimulai')" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow-md flex items-center justify-center gap-2">
+        <i class="fa-solid fa-play"></i> Mulai Sesi Pijat Sekarang
+      </button>
+    `;
+  } else if (job.status === 'sesi_dimulai') {
+    actionBtnContainer.innerHTML = `
+      <button onclick="updateJobStatus('${job.id}', 'selesai')" class="w-full py-3 bg-gray-900 hover:bg-black text-white font-bold rounded-xl text-sm shadow-md flex items-center justify-center gap-2">
+        <i class="fa-solid fa-flag-checkered"></i> Selesaikan Sesi Pekerjaan
+      </button>
+    `;
+  }
+}
+
+function renderTherapistHistory() {
+  const container = document.getElementById('th-history-list');
+  if (!container) return;
+  const th = AppState.currentUser;
+  if (!th) return;
+  
+  const orders = getDB(STORAGE_KEYS.ORDERS).filter(o => o.therapistId === th.id && o.status === 'selesai');
+  const totalEarned = orders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  
+  document.getElementById('th-total-earnings').innerText = formatRupiah(totalEarned);
+  document.getElementById('th-completed-jobs-count').innerText = orders.length;
+  
+  if (orders.length === 0) {
+    container.innerHTML = `<div class="p-8 text-center text-gray-400 text-xs">Belum ada riwayat pekerjaan yang selesai.</div>`;
+    return;
+  }
+  
+  container.innerHTML = orders.map(o => `
+    <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm mb-3">
+      <div class="flex items-center justify-between pb-2 border-b border-gray-100 mb-2">
+        <span class="text-xs font-bold text-gray-500">${o.id}</span>
+        <span class="text-xs font-bold text-emerald-700">${formatRupiah(o.totalPrice)}</span>
+      </div>
+      <div class="font-bold text-sm text-gray-900">${escapeHtml(o.serviceName)}</div>
+      <div class="text-xs text-gray-500">Customer: ${escapeHtml(o.customerName)} • ${o.durationMinutes} Menit</div>
+      <div class="text-[11px] text-gray-400 mt-2 flex items-center justify-between">
+        <span>${formatDate(o.completedAt || o.createdAt)}</span>
+        <span class="text-emerald-600 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>Selesai</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Global Event Listeners & Periodic Sync
+window.addEventListener('DOMContentLoaded', () => {
+  initDatabase();
+  renderApp();
+  
+  // Storage event listener for multi-tab sync
+  window.addEventListener('storage', () => {
+    renderApp();
+    if (currentTrackingOrderId) {
+      const orders = getDB(STORAGE_KEYS.ORDERS);
+      const curr = orders.find(o => o.id === currentTrackingOrderId);
+      if (curr) renderTrackingDetails(curr);
+    }
+  });
+  
+  window.addEventListener('pijatku_data_updated', () => {
+    renderApp();
+  });
+  
+  // Periodic background check for therapist incoming orders & countdown timer
+  setInterval(() => {
+    if (AppState.currentRole === 'therapist') {
+      checkTherapistIncomingOrders();
+    }
+    if (currentTrackingOrderId) {
+      const orders = getDB(STORAGE_KEYS.ORDERS);
+      const curr = orders.find(o => o.id === currentTrackingOrderId);
+      if (curr && curr.status === 'sesi_dimulai') {
+        updateSessionTimerUI(curr);
+      }
+    }
+  }, 1500);
+});
+
+  </script>
+</body>
+</html>

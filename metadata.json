@@ -1,6 +1,6 @@
 {
-  "name": "Bengkelku",
-  "description": "Aplikasi layanan bengkel dan panggilan montir online berbasis lokasi menghubungkan Customer, Montir, dan Admin.",
+  "name": "PIJATKU",
+  "description": "PIJATKU – Pesan Terapis, Nyaman di Rumah. Aplikasi layanan pijat panggilan mobile-first dengan peran Customer, Terapis, dan Admin.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
